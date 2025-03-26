@@ -4,7 +4,7 @@ const  app = express()
 app.use(express.json());
 
 
-app.use('/',publicas)
+app.use('/api',publicas)
 //rotas cadastrar,login/listar rotas
 //publicas login/ cadastro
 
