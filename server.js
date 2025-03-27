@@ -2,8 +2,13 @@ import express from 'express';
 import publicas from './routes/publicas.js';
 import privat from './routes/private.js';
 import auth from './middlewares/auth.js';
+import cors from 'cors';
 
 const app = express();
+
+// Configuração do CORS
+app.use(cors());
+
 app.use(express.json());
 
 // Rotas públicas (login e cadastro)
