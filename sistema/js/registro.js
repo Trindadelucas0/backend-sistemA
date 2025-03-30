@@ -1,29 +1,18 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Nenhum usuário logado! Faça login primeiro.");
+    window.location.href = "/pages/login.html";
+    return;
+  }
+
   document
     .getElementById("ponto-form")
-    .addEventListener("submit", function (event) {
+    .addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const usuarioLogado = localStorage.getItem("usuarioAtual");
-      if (!usuarioLogado) {
-        alert("Nenhum usuário logado! Faça login primeiro.");
-        return;
-      }
       const nome = document.getElementById("nome").value.trim();
-
-      function formatarData(data) {
-        const [ano, mes, dia] = data.split("-");
-        const dataObj = new Date(`${ano}-${mes}-${dia}T00:00:00`);
-        const opcoes = {
-          weekday: "long",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        };
-        return dataObj.toLocaleDateString("pt-BR", opcoes);
-      }
-      const data = formatarData(document.getElementById("data").value.trim());
-
+      const data = document.getElementById("data").value.trim();
       const tipoPonto = document.getElementById("tipo-ponto").value.trim();
       const hora = document.getElementById("hora").value.trim();
       const foto = document.getElementById("foto").files;
@@ -36,40 +25,57 @@ document.addEventListener("DOMContentLoaded", function () {
       const confirmar = confirm(`${nome} Deseja prosseguir com os dados? 
             Data: ${data}
             Tipo de Ponto: ${tipoPonto}
-            Horário: ${hora} `);
+            Horário: ${hora}`);
       if (!confirmar) {
-        alert(`REGISTRO CANCELADO!
-                    TENTE NOVAMENTE!`);
+        alert(`REGISTRO CANCELADO! TENTE NOVAMENTE!`);
+        return;
       }
 
-      let registros = JSON.parse(localStorage.getItem("registros")) || {};
-      if (!registros[usuarioLogado]) {
-        registros[usuarioLogado] = [];
+      try {
+        // Converte as fotos para base64
+        const fotoBase64 = await Promise.all(
+          Array.from(foto).map((file) => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (event) => resolve(event.target.result);
+              reader.onerror = (error) => reject(error);
+              reader.readAsDataURL(file);
+            });
+          })
+        );
+
+        // Envia os dados para o backend
+        const response = await fetch("http://localhost:3000/registro", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            data,
+            tipoPonto,
+            hora,
+            foto: fotoBase64,
+          }),
+        });
+
+        if (response.ok) {
+          alert("Ponto registrado com sucesso!");
+          window.location.href = "/sistema/pages/ver-registros.html"; // Redireciona para a página de registros
+        } else {
+          const error = await response.json();
+          alert(`Erro ao registrar ponto: ${error.message}`);
+        }
+      } catch (err) {
+        console.error("Erro ao registrar ponto:", err);
+        alert("Erro no servidor. Tente novamente mais tarde.");
       }
-      const fotoBase64 = [];
-      Array.from(foto).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          fotoBase64.push(event.target.result);
-
-          if (fotoBase64.length === foto.length) {
-            const novoRegistro = { data, tipoPonto, hora, foto: fotoBase64 };
-            registros[usuarioLogado].push(novoRegistro);
-            localStorage.setItem("registros", JSON.stringify(registros));
-
-            alert("Ponto registrado com sucesso!");
-            // Redireciona para a página de registros após o registro do ponto
-            window.location.href = "/pages/ver-registros.html";
-          }
-        };
-        reader.readAsDataURL(file); // Lê a foto como base64
-      });
     });
 
   // Navegar para a página de registros
   document
     .getElementById("ver-registros-btn")
     .addEventListener("click", function () {
-      window.location.href = "/pages/ver-registros.html"; // Vai para a página de visualização dos registros
+      window.location.href = "/sistema/pages/ver-registros.html"; // Vai para a página de visualização dos registros
     });
 });

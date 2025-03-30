@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const data = await response.json();
           alert("Login realizado com sucesso!");
           localStorage.setItem("token", data.token); // Armazena o token no localStorage
-          window.location.href = "pagina-protegida.html"; // Redireciona para a página protegida
+          window.location.href = "registro-ponto.html"; // Redireciona para a página protegida
         } else {
           const error = await response.json();
           alert(`Erro no login: ${error.message}`);
