@@ -1,5 +1,5 @@
 {
-  "name": "nova-pasta-(2)",
+  "name": "sistema",
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",
@@ -8,7 +8,7 @@
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Lucas Trindade",
   "license": "ISC",
   "description": "",
   "dependencies": {

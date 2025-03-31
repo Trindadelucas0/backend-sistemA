@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const token = localStorage.getItem("token");
   if (!token) {
     alert("Nenhum usuário logado! Faça login primeiro.");
-    window.location.href = "/pages/login.html";
+    window.location.href = "/sistema/pages/login.html";
     return;
   }
 

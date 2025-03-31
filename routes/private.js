@@ -129,22 +129,23 @@ router.delete("/registro/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verifica se o registro existe e pertence ao usuário
+    // Verifica se o registro existe
     const registro = await prisma.registro.findUnique({
-      where: { id },
+      where: { id: String(id) },
     });
 
     if (!registro) {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
 
+    // Verifica se o registro pertence ao usuário autenticado
     if (registro.userId !== req.user.id) {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    // Remove o registro
+    // Deleta o registro
     await prisma.registro.delete({
-      where: { id },
+      where: { id: String(id) },
     });
 
     res.status(200).json({ message: "Registro removido com sucesso" });
