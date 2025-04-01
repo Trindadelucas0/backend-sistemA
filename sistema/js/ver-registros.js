@@ -238,86 +238,175 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para calcular horas trabalhadas
   function calcularHorasTrabalhadas(registros, cargaHoraria) {
-    // Agrupa os registros por data
-    const registrosPorData = {};
-    registros.forEach(registro => {
-      const data = new Date(registro.data).toISOString().split('T')[0];
-      if (!registrosPorData[data]) {
-        registrosPorData[data] = [];
-      }
-      registrosPorData[data].push(registro);
-    });
-
     let totalHorasTrabalhadas = 0;
     let totalHorasExtras = 0;
     let totalHorasFaltantes = 0;
 
-    // Para cada dia
-    Object.values(registrosPorData).forEach(registrosDia => {
-      // Ordena os registros por hora
-      registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
-      
-      let horasDia = 0;
-      let ultimoRegistro = null;
-      
-      registrosDia.forEach(registro => {
-        if (ultimoRegistro) {
-          // Se o último registro foi saída para almoço e este é retorno
-          if (ultimoRegistro.tipoPonto === "almoco" && registro.tipoPonto === "retorno") {
-            // Não soma as horas do almoço
-            ultimoRegistro = registro;
-            return;
-          }
-          
-          const hora1 = new Date(`2000-01-01T${ultimoRegistro.hora}`);
-          const hora2 = new Date(`2000-01-01T${registro.hora}`);
-          const diff = (hora2 - hora1) / (1000 * 60 * 60); // Diferença em horas
-          horasDia += diff;
+    // Agrupa registros por data
+    const registrosPorData = {};
+    registros.forEach(registro => {
+        const data = new Date(registro.data).toISOString().split('T')[0];
+        if (!registrosPorData[data]) {
+            registrosPorData[data] = [];
         }
-        ultimoRegistro = registro;
-      });
+        registrosPorData[data].push(registro);
+    });
 
-      // Compara com a carga horária
-      const cargaHorariaNum = parseFloat(cargaHoraria);
-      if (horasDia > cargaHorariaNum) {
-        totalHorasExtras += horasDia - cargaHorariaNum;
-      } else {
-        totalHorasFaltantes += cargaHorariaNum - horasDia;
-      }
-      totalHorasTrabalhadas += horasDia;
+    // Calcula horas por dia
+    Object.values(registrosPorData).forEach(registrosDia => {
+        // Ordena registros por hora
+        registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
+        
+        let horasDia = 0;
+        let ultimoRegistro = null;
+        
+        registrosDia.forEach(registro => {
+            if (ultimoRegistro) {
+                // Ignora período de almoço
+                if (ultimoRegistro.tipoPonto === "almoco" && registro.tipoPonto === "retorno") {
+                    ultimoRegistro = registro;
+                    return;
+                }
+                
+                // Calcula diferença entre registros
+                const hora1 = new Date(`2000-01-01T${ultimoRegistro.hora}`);
+                const hora2 = new Date(`2000-01-01T${registro.hora}`);
+                const diff = (hora2 - hora1) / (1000 * 60 * 60);
+                horasDia += diff;
+            }
+            ultimoRegistro = registro;
+        });
+
+        // Compara com carga horária
+        if (horasDia > cargaHoraria) {
+            totalHorasExtras += horasDia - cargaHoraria;
+        } else {
+            totalHorasFaltantes += cargaHoraria - horasDia;
+        }
+        totalHorasTrabalhadas += horasDia;
     });
 
     return {
-      horasTrabalhadas: formatarHoras(totalHorasTrabalhadas),
-      horasExtras: formatarHoras(totalHorasExtras),
-      horasFaltantes: formatarHoras(totalHorasFaltantes)
+        horasTrabalhadas: formatarHoras(totalHorasTrabalhadas),
+        horasExtras: formatarHoras(totalHorasExtras),
+        horasFaltantes: formatarHoras(totalHorasFaltantes)
     };
   }
 
-  // Adiciona o evento de clique no botão de calcular horas
-  document.getElementById('calcular-horas').addEventListener('click', function() {
+  // Função para atualizar cálculos em tempo real
+  function atualizarCalculos() {
+    const cargaHoraria = document.getElementById('carga-horaria').value;
+    if (cargaHoraria) {
+        const [horas, minutos] = cargaHoraria.split(':').map(Number);
+        const cargaHorariaDecimal = horas + minutos / 60;
+        
+        const resultado = calcularHorasTrabalhadas(registros, cargaHorariaDecimal);
+        
+        document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
+        document.getElementById('horas-extras').textContent = resultado.horasExtras;
+        document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
+    }
+  }
+
+  // Adiciona event listener para o botão de calcular horas
+  document.getElementById('calcular-horas').addEventListener('click', () => {
     const cargaHoraria = document.getElementById('carga-horaria').value;
     if (!cargaHoraria) {
-      alert('Por favor, insira a carga horária diária');
-      return;
+        alert('Por favor, insira a carga horária diária');
+        return;
     }
 
-    // Valida o formato da carga horária (HH:MM)
-    if (!/^\d{2}:\d{2}$/.test(cargaHoraria)) {
-      alert('Por favor, insira a carga horária no formato HH:MM (ex: 08:00)');
-      return;
-    }
-
-    // Converte a carga horária para número decimal
     const [horas, minutos] = cargaHoraria.split(':').map(Number);
     const cargaHorariaDecimal = horas + minutos / 60;
-
+    
     const resultado = calcularHorasTrabalhadas(registros, cargaHorariaDecimal);
     
     document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
     document.getElementById('horas-extras').textContent = resultado.horasExtras;
     document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
   });
+
+  // Adiciona event listener para atualização em tempo real da carga horária
+  document.getElementById('carga-horaria').addEventListener('input', atualizarCalculos);
+
+  // Função para ordenar registros por data e hora (mais recentes primeiro)
+  function ordenarRegistros(registros) {
+    return registros.sort((a, b) => {
+        // Combina data e hora para comparação
+        const dataHoraA = new Date(`${a.data}T${a.hora}`);
+        const dataHoraB = new Date(`${b.data}T${b.hora}`);
+        
+        // Ordena do mais recente para o mais antigo
+        return dataHoraB - dataHoraA;
+    });
+  }
+
+  // Função para agrupar registros por data
+  function agruparPorData(registros) {
+    const registrosAgrupados = {};
+    
+    registros.forEach(registro => {
+        const data = new Date(registro.data).toISOString().split('T')[0];
+        if (!registrosAgrupados[data]) {
+            registrosAgrupados[data] = [];
+        }
+        registrosAgrupados[data].push(registro);
+    });
+    
+    // Ordena as datas em ordem decrescente
+    return Object.keys(registrosAgrupados)
+        .sort((a, b) => new Date(b) - new Date(a))
+        .reduce((acc, data) => {
+            acc[data] = registrosAgrupados[data];
+            return acc;
+        }, {});
+  }
+
+  // Função para atualizar a tabela de registros
+  function atualizarTabela() {
+    const tabela = document.getElementById("tabela-registros");
+    tabela.innerHTML = "";
+
+    // Ordena todos os registros
+    const registrosOrdenados = ordenarRegistros(registros);
+    
+    // Agrupa por data
+    const registrosAgrupados = agruparPorData(registrosOrdenados);
+    
+    // Para cada data
+    Object.entries(registrosAgrupados).forEach(([data, registrosDia]) => {
+        // Adiciona cabeçalho da data
+        const linhaData = document.createElement("tr");
+        linhaData.className = "data-header";
+        linhaData.innerHTML = `<td colspan="5"><strong>${formatarDataLocal(data)}</strong></td>`;
+        tabela.appendChild(linhaData);
+        
+        // Adiciona registros do dia
+        registrosDia.forEach((registro) => {
+            const linha = document.createElement("tr");
+            linha.innerHTML = `
+                <td>${registro.tipoPonto}</td>
+                <td>${registro.hora}</td>
+                <td>
+                    ${registro.foto && registro.foto.length > 0
+                        ? registro.foto.map((foto, i) => `
+                            <img src="${foto}" style="width: 50px;">
+                            <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
+                        `).join("")
+                        : "Nenhuma foto"}
+                </td>
+                <td>
+                    <button onclick="editarCampo(${registro.id}, 'data')">Editar Data</button>
+                    <button onclick="editarCampo(${registro.id}, 'tipoPonto')">Editar Tipo</button>
+                    <button onclick="editarCampo(${registro.id}, 'hora')">Editar Horário</button>
+                    <button onclick="editarCampo(${registro.id}, 'foto')">Editar Fotos</button>
+                    <button onclick="removerRegistro(${registro.id})">Remover</button>
+                </td>
+            `;
+            tabela.appendChild(linha);
+        });
+    });
+  }
 
   // Buscar registros ao carregar a página
   buscarRegistros();
