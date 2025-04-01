@@ -407,9 +407,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
   }
-  document.getElementById('Voltar').addEventListener('click', () => {
-    window.location.href = '/sistema/pages/registro-ponto.html';
-});
+
   // Buscar registros ao carregar a página
   buscarRegistros();
 });
