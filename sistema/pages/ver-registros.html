@@ -13,8 +13,6 @@
 <body>
     <div class="container">
         <h1>Registros de Ponto</h1>
-        
-        
 
         <div class="tabela-container">
             <table id="tabela-registros">
@@ -33,7 +31,6 @@
             </table>
         </div>
     </div>
-    
 
     <!-- Modal de Edição -->
     <div id="form-edicao" class="modal">
@@ -41,11 +38,11 @@
             <form id="editar-form">
                 <div id="editar-data-group">
                     <label for="editar-data">Data:</label>
-                    <input type="date" id="editar-data" required>
+                    <input type="date" id="editar-data">
                 </div>
                 <div id="editar-tipo-ponto-group">
                     <label for="editar-tipo-ponto">Tipo de Ponto:</label>
-                    <select id="editar-tipo-ponto" required>
+                    <select id="editar-tipo-ponto">
                         <option value="entrada">Entrada</option>
                         <option value="almoco">Almoço</option>
                         <option value="retorno">Retorno</option>
@@ -54,11 +51,11 @@
                 </div>
                 <div id="editar-hora-group">
                     <label for="editar-hora">Horário:</label>
-                    <input type="time" id="editar-hora" required>
+                    <input type="time" id="editar-hora">
                 </div>
                 <div id="editar-foto-group">
                     <label for="editar-foto">Fotos:</label>
-                    <input type="file" id="editar-foto" accept="image/*" multiple required>
+                    <input type="file" id="editar-foto" accept="image/*" multiple>
                 </div>
                 <div class="form-buttons">
                     <button type="submit">Salvar</button>
@@ -66,8 +63,8 @@
                 </div>
             </form>
         </div>
-        
     </div>
+
     <div class="form-group">
         <label for="carga-horaria">Carga Horária Diária (HH:MM):</label>
         <input type="text" id="carga-horaria" placeholder="Ex: 08:00">

@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (response.ok) {
         const data = await response.json();
         registros = data.registros;
+        console.log("Registros atualizados:", registros); // Log para debug
         exibirRegistros();
       } else {
         const error = await response.json();
@@ -59,35 +60,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para exibir os registros na tabela
   function exibirRegistros() {
-    tabela.innerHTML = "";
+    const tbody = tabela.querySelector("tbody");
+    tbody.innerHTML = ""; // Limpa a tabela atual
+
     if (registros.length === 0) {
-        tabela.innerHTML = '<tr><td colspan="5">Nenhum registro encontrado.</td></tr>';
-    } else {
-        registros.forEach((registro, index) => {
-            const linha = document.createElement("tr");
-            linha.innerHTML = `
-                <td>${formatarDataLocal(registro.data)}</td>
-                <td>${registro.tipoPonto}</td>
-                <td>${registro.hora}</td>
-                <td>
-                    ${registro.foto && registro.foto.length > 0
-                        ? registro.foto.map((foto, i) => `
-                            <img src="${foto}" style="width: 50px;">
-                            <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
-                        `).join("")
-                        : "Nenhuma foto"}
-                </td>
-                <td>
-                    <button onclick="editarCampo(${index}, 'data')">Editar Data</button>
-                    <button onclick="editarCampo(${index}, 'tipoPonto')">Editar Tipo</button>
-                    <button onclick="editarCampo(${index}, 'hora')">Editar Horário</button>
-                    <button onclick="editarCampo(${index}, 'foto')">Editar Fotos</button>
-                    <button onclick="removerRegistro(${index})">Remover</button>
-                </td>
-            `;
-            tabela.appendChild(linha);
-        });
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum registro encontrado.</td></tr>';
+        return;
     }
+
+    // Ordena os registros por data e hora
+    const registrosOrdenados = registros.sort((a, b) => {
+        const dataA = new Date(a.data);
+        const dataB = new Date(b.data);
+        if (dataA.getTime() === dataB.getTime()) {
+            return a.hora.localeCompare(b.hora);
+        }
+        return dataB.getTime() - dataA.getTime();
+    });
+
+    registrosOrdenados.forEach((registro, index) => {
+        const linha = document.createElement("tr");
+        linha.innerHTML = `
+            <td>${formatarDataLocal(registro.data)}</td>
+            <td>${registro.tipoPonto}</td>
+            <td>${registro.hora}</td>
+            <td>
+                ${registro.foto && registro.foto.length > 0
+                    ? registro.foto.map((foto, i) => `
+                        <img src="${foto}" style="width: 50px;">
+                        <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
+                    `).join("")
+                    : "Nenhuma foto"}
+            </td>
+            <td>
+                <button onclick="editarData(${index})">Editar Data</button>
+                <button onclick="editarCampo(${index}, 'tipoPonto')">Editar Tipo</button>
+                <button onclick="editarCampo(${index}, 'hora')">Editar Horário</button>
+                <button onclick="editarCampo(${index}, 'foto')">Editar Fotos</button>
+                <button onclick="removerRegistro(${index})">Remover</button>
+            </td>
+        `;
+        tbody.appendChild(linha);
+    });
   }
 
   // Função para formatar horas no formato HH:MM
@@ -95,6 +109,61 @@ document.addEventListener("DOMContentLoaded", function () {
     const horasInt = Math.floor(horas);
     const minutos = Math.round((horas - horasInt) * 60);
     return `${horasInt.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+  }
+
+  // Função para validar sequência de registros
+  function validarSequenciaRegistros(registrosDia, novoRegistro) {
+    if (!registrosDia || registrosDia.length === 0) {
+        // Primeiro registro do dia
+        if (novoRegistro.tipoPonto !== 'entrada') {
+            throw new Error('O primeiro registro do dia deve ser uma entrada');
+        }
+        return true;
+    }
+
+    const ultimoRegistro = registrosDia[registrosDia.length - 1];
+    const cicloAberto = verificarCicloAberto(registrosDia);
+
+    // Se tentar registrar uma nova entrada com ciclo aberto
+    if (novoRegistro.tipoPonto === 'entrada' && cicloAberto) {
+        throw new Error('Ciclo anterior não fechado. Adicione a saída primeiro.');
+    }
+
+    // Validar sequência permitida
+    switch (ultimoRegistro.tipoPonto) {
+        case 'entrada':
+            if (novoRegistro.tipoPonto !== 'almoco') {
+                throw new Error('Após entrada, apenas almoço é permitido');
+            }
+            break;
+        case 'almoco':
+            if (novoRegistro.tipoPonto !== 'retorno') {
+                throw new Error('Após almoço, apenas retorno é permitido');
+            }
+            break;
+        case 'retorno':
+            if (novoRegistro.tipoPonto !== 'saida') {
+                throw new Error('Após retorno, apenas saída é permitido');
+            }
+            break;
+        case 'saida':
+            if (novoRegistro.tipoPonto !== 'entrada') {
+                throw new Error('Após saída, apenas entrada é permitida');
+            }
+            break;
+    }
+
+    return true;
+  }
+
+  // Função para verificar se existe ciclo aberto
+  function verificarCicloAberto(registrosDia) {
+    if (!registrosDia || registrosDia.length === 0) {
+        return false;
+    }
+
+    const ultimoRegistro = registrosDia[registrosDia.length - 1];
+    return ultimoRegistro.tipoPonto !== 'saida';
   }
 
   // Função para calcular horas trabalhadas
@@ -119,24 +188,27 @@ document.addEventListener("DOMContentLoaded", function () {
         registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
         
         let horasDia = 0;
-        let ultimoRegistro = null;
+        let periodoAlmoco = 0;
         
-        registrosDia.forEach(registro => {
-            if (ultimoRegistro) {
-                // Ignora período de almoço
-                if (ultimoRegistro.tipoPonto === "almoco" && registro.tipoPonto === "retorno") {
-                    ultimoRegistro = registro;
-                    return;
-                }
-                
-                // Calcula diferença entre registros
-                const hora1 = new Date(`2000-01-01T${ultimoRegistro.hora}`);
-                const hora2 = new Date(`2000-01-01T${registro.hora}`);
-                const diff = (hora2 - hora1) / (1000 * 60 * 60);
-                horasDia += diff;
-            }
-            ultimoRegistro = registro;
-        });
+        // Calcula período da manhã (entrada até almoço)
+        const entrada = registrosDia.find(r => r.tipoPonto === 'entrada');
+        const almoco = registrosDia.find(r => r.tipoPonto === 'almoco');
+        if (entrada && almoco) {
+            const horaEntrada = new Date(`2000-01-01T${entrada.hora}`);
+            const horaAlmoco = new Date(`2000-01-01T${almoco.hora}`);
+            periodoAlmoco += (horaAlmoco - horaEntrada) / (1000 * 60 * 60);
+        }
+        
+        // Calcula período da tarde (retorno até saída)
+        const retorno = registrosDia.find(r => r.tipoPonto === 'retorno');
+        const saida = registrosDia.find(r => r.tipoPonto === 'saida');
+        if (retorno && saida) {
+            const horaRetorno = new Date(`2000-01-01T${retorno.hora}`);
+            const horaSaida = new Date(`2000-01-01T${saida.hora}`);
+            periodoAlmoco += (horaSaida - horaRetorno) / (1000 * 60 * 60);
+        }
+        
+        horasDia = periodoAlmoco;
 
         // Compara com carga horária
         if (horasDia > cargaHoraria) {
@@ -529,7 +601,7 @@ document.addEventListener("DOMContentLoaded", function () {
         yPos += 8;
         doc.setTextColor(255, 0, 0);
         doc.text(`Horas Faltantes: ${horasFaltantes}`, margemEsquerda, yPos);
-        doc.setTextColor(0, 0, 0);
+        yPos += 8;
 
         // Adicionar espaço para assinatura
         yPos = 297 - margemInferior - 40;
@@ -612,27 +684,33 @@ document.addEventListener("DOMContentLoaded", function () {
     campoEditando = campo;
     const registro = registros[index];
 
-    // Exibe o formulário de edição e configura o campo correto
+    // Exibe o formulário de edição
     formEdicao.style.display = "block";
-    document.getElementById("editar-data-group").style.display =
-      campo === "data" ? "block" : "none";
-    document.getElementById("editar-tipo-ponto-group").style.display =
-      campo === "tipoPonto" ? "block" : "none";
-    document.getElementById("editar-hora-group").style.display =
-      campo === "hora" ? "block" : "none";
-    document.getElementById("editar-foto-group").style.display =
-      campo === "foto" ? "block" : "none";
-
-    // Preenche o formulário com os dados atuais
-    if (campo === "data") {
-      document.getElementById("editar-data").value = ajustarData(registro.data);
-    } else if (campo === "tipoPonto") {
-      document.getElementById("editar-tipo-ponto").value = registro.tipoPonto;
-    } else if (campo === "hora") {
-      document.getElementById("editar-hora").value = registro.hora;
-    } else if (campo === "foto") {
-      // Limpa o input de arquivo
-      document.getElementById("editar-foto").value = "";
+    
+    // Esconde todos os grupos primeiro
+    document.getElementById("editar-data-group").style.display = "none";
+    document.getElementById("editar-tipo-ponto-group").style.display = "none";
+    document.getElementById("editar-hora-group").style.display = "none";
+    document.getElementById("editar-foto-group").style.display = "none";
+    
+    // Mostra apenas o grupo do campo sendo editado
+    switch(campo) {
+        case "data":
+            document.getElementById("editar-data-group").style.display = "block";
+            document.getElementById("editar-data").value = ajustarData(registro.data);
+            break;
+        case "tipoPonto":
+            document.getElementById("editar-tipo-ponto-group").style.display = "block";
+            document.getElementById("editar-tipo-ponto").value = registro.tipoPonto;
+            break;
+        case "hora":
+            document.getElementById("editar-hora-group").style.display = "block";
+            document.getElementById("editar-hora").value = registro.hora;
+            break;
+        case "foto":
+            document.getElementById("editar-foto-group").style.display = "block";
+            document.getElementById("editar-foto").value = "";
+            break;
     }
   };
 
@@ -680,91 +758,121 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Função para salvar as alterações do campo editado
+  // Event listener do formulário de edição
   editarForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const dadosAtualizados = {};
-    if (campoEditando === "data") {
-      dadosAtualizados.data = document.getElementById("editar-data").value;
-    } else if (campoEditando === "tipoPonto") {
-      dadosAtualizados.tipoPonto = document.getElementById("editar-tipo-ponto").value;
-    } else if (campoEditando === "hora") {
-      dadosAtualizados.hora = document.getElementById("editar-hora").value;
-    } else if (campoEditando === "foto") {
-      const inputFoto = document.getElementById("editar-foto");
-      if (inputFoto.files.length > 0) {
-        try {
-          // Converte todas as fotos para base64
-          const fotosBase64 = await Promise.all(
-            Array.from(inputFoto.files).map(converterParaBase64)
-          );
-          dadosAtualizados.foto = fotosBase64;
-        } catch (err) {
-          console.error("Erro ao converter fotos:", err);
-          alert("Erro ao processar as fotos. Tente novamente.");
-          return;
-        }
-      } else {
-        alert("Selecione pelo menos uma foto!");
+    if (!registroEditando || !campoEditando) {
+        alert("Erro: Nenhum registro selecionado para edição");
         return;
-      }
     }
+
+    const dadosAtualizados = {};
+    let campoValido = true;
+    
+    // Valida apenas o campo que está sendo editado
+    switch(campoEditando) {
+        case "data":
+            const data = document.getElementById("editar-data").value;
+            if (!data) {
+                alert("Por favor, selecione uma data");
+                campoValido = false;
+            } else {
+                dadosAtualizados.data = data;
+            }
+            break;
+        case "tipoPonto":
+            const tipoPonto = document.getElementById("editar-tipo-ponto").value;
+            if (!tipoPonto) {
+                alert("Por favor, selecione um tipo de ponto");
+                campoValido = false;
+            } else {
+                dadosAtualizados.tipoPonto = tipoPonto;
+            }
+            break;
+        case "hora":
+            const hora = document.getElementById("editar-hora").value;
+            if (!hora) {
+                alert("Por favor, selecione um horário");
+                campoValido = false;
+            } else {
+                dadosAtualizados.hora = hora;
+            }
+            break;
+        case "foto":
+            const inputFoto = document.getElementById("editar-foto");
+            if (inputFoto.files.length === 0) {
+                alert("Por favor, selecione pelo menos uma foto");
+                campoValido = false;
+            } else {
+                try {
+                    const fotosBase64 = await Promise.all(
+                        Array.from(inputFoto.files).map(converterParaBase64)
+                    );
+                    dadosAtualizados.foto = fotosBase64;
+                } catch (err) {
+                    console.error("Erro ao converter fotos:", err);
+                    alert("Erro ao processar as fotos. Tente novamente.");
+                    campoValido = false;
+                }
+            }
+            break;
+    }
+
+    if (!campoValido) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/registro/${registroEditando}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(dadosAtualizados),
-      });
+        console.log("Enviando atualização:", dadosAtualizados);
+        const response = await fetch(`http://localhost:3000/registro/${registroEditando}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(dadosAtualizados),
+        });
 
-      if (response.ok) {
-        alert("Registro atualizado com sucesso!");
-        formEdicao.style.display = "none";
-        buscarRegistros();
-      } else {
-        const error = await response.json();
-        alert(`Erro ao atualizar registro: ${error.message}`);
-      }
+        if (response.ok) {
+            alert("Registro atualizado com sucesso!");
+            formEdicao.style.display = "none";
+            await buscarRegistros();
+            registroEditando = null;
+            campoEditando = null;
+        } else {
+            const error = await response.json();
+            alert(`Erro ao atualizar registro: ${error.message}`);
+        }
     } catch (err) {
-      console.error("Erro ao atualizar registro:", err);
-      alert("Erro no servidor. Tente novamente mais tarde.");
+        console.error("Erro ao atualizar registro:", err);
+        alert("Erro no servidor. Tente novamente mais tarde.");
     }
   });
 
-  // Função para cancelar a edição
-  cancelarEdicaoBtn.addEventListener("click", function () {
-    formEdicao.style.display = "none";
+  // Função para limpar o formulário
+  function limparFormulario() {
+    document.getElementById("editar-data").value = "";
+    document.getElementById("editar-tipo-ponto").value = "entrada";
+    document.getElementById("editar-hora").value = "";
+    document.getElementById("editar-foto").value = "";
     registroEditando = null;
     campoEditando = null;
-  });
+  }
 
   // Função para fechar o modal
   function fecharModal() {
-    const modal = document.getElementById('form-edicao');
-    if (modal) {
-        modal.style.display = 'none';
-        // Limpar o formulário
-        const form = document.getElementById('editar-form');
-        if (form) {
-            form.reset();
-        }
-    }
+    formEdicao.style.display = "none";
+    limparFormulario();
   }
+
+  // Adicionar event listener para o botão cancelar
+  cancelarEdicaoBtn.addEventListener("click", fecharModal);
 
   // Fechar modal ao clicar fora dele
   window.onclick = function(event) {
-    const modal = document.getElementById('form-edicao');
-    if (event.target === modal) {
+    if (event.target === formEdicao) {
         fecharModal();
     }
   }
-
-  // Fechar modal ao clicar no botão cancelar
-  document.getElementById('cancelar-edicao').addEventListener('click', fecharModal);
 
   // Garantir que o modal esteja fechado ao carregar a página
   document.addEventListener('DOMContentLoaded', function() {
@@ -773,4 +881,60 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Buscar registros ao carregar a página
   buscarRegistros();
+
+  // Função para atualizar status do ciclo na interface
+  function atualizarStatusCiclo() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const registrosDia = registros.filter(r => r.data === hoje);
+    const cicloAberto = verificarCicloAberto(registrosDia);
+    
+    const cicloStatus = document.getElementById('ciclo-status');
+    const proximoRegistro = document.getElementById('proximo-registro');
+    
+    if (cicloAberto) {
+        cicloStatus.classList.add('aberto');
+        cicloStatus.querySelector('span').textContent = 'Ciclo Aberto';
+        
+        // Determinar próximo registro esperado
+        const ultimoRegistro = registrosDia[registrosDia.length - 1];
+        let proximo = '';
+        
+        switch (ultimoRegistro.tipoPonto) {
+            case 'entrada':
+                proximo = 'Almoço';
+                break;
+            case 'almoco':
+                proximo = 'Retorno';
+                break;
+            case 'retorno':
+                proximo = 'Saída';
+                break;
+        }
+        
+        proximoRegistro.querySelector('span').textContent = proximo;
+    } else {
+        cicloStatus.classList.remove('aberto');
+        cicloStatus.querySelector('span').textContent = 'Ciclo Fechado';
+        proximoRegistro.querySelector('span').textContent = 'Entrada';
+    }
+  }
+
+  // Função para editar data
+  window.editarData = function (index) {
+    registroEditando = registros[index].id;
+    campoEditando = "data"; // Define o campo sendo editado
+    const registro = registros[index];
+
+    // Exibe o formulário de edição
+    formEdicao.style.display = "block";
+    
+    // Mostra apenas o campo de data
+    document.getElementById("editar-data-group").style.display = "block";
+    document.getElementById("editar-tipo-ponto-group").style.display = "none";
+    document.getElementById("editar-hora-group").style.display = "none";
+    document.getElementById("editar-foto-group").style.display = "none";
+
+    // Preenche o formulário com a data atual
+    document.getElementById("editar-data").value = ajustarData(registro.data);
+  };
 });
