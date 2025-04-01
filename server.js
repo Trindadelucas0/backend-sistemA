@@ -23,34 +23,7 @@ app.use(auth);
 app.use('/', privat);
 
 // Inicialização do servidor
-app.listen(3000, () => console.log(`
-    \x1b[36m
-    ██████╗  ██████╗ ███╗   ██╗████████╗ ██████╗ 
-    ██╔══██╗██╔═══██╗████╗  ██║╚══██╔══╝██╔═══██╗
-    ██████╔╝██║   ██║██╔██╗ ██║   ██║   ██║   ██║
-    ██╔═══╝ ██║   ██║██║╚██╗██║   ██║   ██║   ██║
-    ██║     ╚██████╔╝██║ ╚████║   ██║   ╚██████╔╝
-    ╚═╝      ╚═════╝ ╚═╝  ╚═══╝   ╚═╝    ╚═════╝ 
-    \x1b[0m
-    \x1b[33m
-    ===========================================
-    🚀  SISTEMA DE REGISTRO DE PONTO - v2.0
-    ===========================================
-    \x1b[32m
-    ✔ Servidor rodando na porta: \x1b[1m3000\x1b[0m
-    ✔ Ambiente: \x1b[1m${process.env.NODE_ENV || 'desenvolvimento'}\x1b[0m
-    ✔ Iniciado em: \x1b[1m${new Date().toLocaleString('pt-BR')}\x1b[0m
-    
-    \x1b[36m► \x1b[35mRegistro de entradas/saídas
-    \x1b[36m► \x1b[35mCálculo de horas trabalhadas
-    \x1b[36m► \x1b[35mRelatórios completos
-    
-    
-    \x1b[33m
-    -------------------------------------------
-    👨‍💻 Desenvolvedor: Lucas Rodrigues da Trindade
-    ===========================================
-    \x1b[0m
-    `));
+app.listen(3000, () => console.log('**** Servidor Rodando na porta 3000 *****'));
+
 //mongodb+srv://atlas-sample-dataset-load-67e34e52d329fa5b694975f0:<db_password>@sistema-ponto.solp6nb.mongodb.net/?retryWrites=true&w=majority&appName=sistema-ponto
 //lucasrodrigues4
