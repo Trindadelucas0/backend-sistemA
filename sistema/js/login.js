@@ -24,9 +24,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (response.ok) {
           const data = await response.json();
+          
+          // Salvar token e dados do usuário
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("usuario", JSON.stringify({
+            id: data.user.id,
+            nome: data.user.name,
+            email: data.user.email,
+            matricula: data.user.id, // Usando o ID como matrícula temporariamente
+            cargo: "Funcionário", // Valor padrão
+            departamento: "TI" // Valor padrão
+          }));
+          
+          console.log("Dados do usuário salvos:", JSON.parse(localStorage.getItem("usuario"))); // Log para debug
+          
           alert("Login realizado com sucesso!");
-          localStorage.setItem("token", data.token); // Armazena o token no localStorage
-          window.location.href = "registro-ponto.html"; // Redireciona para a página protegida
+          window.location.href = "registro-ponto.html";
         } else {
           const error = await response.json();
           alert(`Erro no login: ${error.message}`);

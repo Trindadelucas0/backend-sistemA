@@ -71,8 +71,15 @@ router.post("/login", async (req, res) => {
     // Gera o token JWT
     const token = jwt.sign({ id: user.id }, jwt_secret, { expiresIn: "1h" });
 
-    console.log("Token gerado:", token);
-    res.status(200).json({ token });
+    // Retorna o token e os dados do usuário
+    res.status(200).json({ 
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (err) {
     console.error("Erro no servidor:", err);
     res.status(500).json({ message: "Erro no servidor, tente novamente" });
