@@ -40,7 +40,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Lógica para o botão de logout
   document.getElementById("logout-button").addEventListener("click", () => {
-    localStorage.removeItem("token"); // Remove o token do localStorage
-    alert("Você foi desconectado.");
-    window.location.href = "login.html"; // Redireciona para a página de login
+    // Limpar todos os dados sensíveis
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Limpar cookies relacionados à sessão
+    document.cookie.split(";").forEach(cookie => {
+      document.cookie = cookie
+        .replace(/^ +/, "")
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
+    
+    alert("Você foi desconectado com sucesso.");
+    window.location.href = "login.html";
   });
