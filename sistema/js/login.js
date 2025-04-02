@@ -25,23 +25,20 @@ document.addEventListener("DOMContentLoaded", function () {
         if (response.ok) {
           const data = await response.json();
           
-          // Validação mais robusta dos dados retornados
-          if (!data.token || !data.user || !data.user.id || !data.user.name || !data.user.email) {
-            throw new Error("Dados de resposta inválidos");
-          }
-
-          // Usar sessionStorage em vez de localStorage para maior segurança
-          sessionStorage.setItem("token", data.token);
-          sessionStorage.setItem("usuario", JSON.stringify({
+          // Salvar token e dados do usuário
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("usuario", JSON.stringify({
             id: data.user.id,
             nome: data.user.name,
             email: data.user.email,
-            matricula: data.user.id,
-            cargo: "Funcionário",
-            departamento: "TI"
+            matricula: data.user.id, // Usando o ID como matrícula temporariamente
+            cargo: "Funcionário", // Valor padrão
+            departamento: "TI" // Valor padrão
           }));
           
-          console.log("Login realizado com sucesso");
+          console.log("Dados do usuário salvos:", JSON.parse(localStorage.getItem("usuario"))); // Log para debug
+          
+          alert("Login realizado com sucesso!");
           window.location.href = "registro-ponto.html";
         } else {
           const error = await response.json();

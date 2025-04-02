@@ -32,25 +32,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       try {
-        // Mostrar indicador de carregamento
-        const loadingDiv = document.createElement('div');
-        loadingDiv.id = 'loading-indicator';
-        loadingDiv.innerHTML = '<div class="spinner"></div><p>Processando fotos...</p>';
-        document.body.appendChild(loadingDiv);
-
-        // Converte as fotos para base64 com validação de tamanho
+        // Converte as fotos para base64
         const fotoBase64 = await Promise.all(
-          Array.from(foto).map(async (file) => {
-            // Validar tamanho do arquivo (máximo 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-              throw new Error(`A foto ${file.name} excede o tamanho máximo permitido de 5MB`);
-            }
-
-            // Validar tipo do arquivo
-            if (!file.type.startsWith('image/')) {
-              throw new Error(`O arquivo ${file.name} não é uma imagem válida`);
-            }
-
+          Array.from(foto).map((file) => {
             return new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = (event) => resolve(event.target.result);
@@ -59,9 +43,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
           })
         );
-
-        // Remove o indicador de carregamento
-        document.body.removeChild(loadingDiv);
 
         // Envia os dados para o backend
         const response = await fetch("http://localhost:3000/registro", {
@@ -80,8 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (response.ok) {
           alert("Ponto registrado com sucesso!");
-          // Limpar o formulário em vez de redirecionar
-          document.getElementById("ponto-form").reset();
+          window.location.href = "/sistema/pages/ver-registros.html"; // Redireciona para a página de registros
         } else {
           const error = await response.json();
           alert(`Erro ao registrar ponto: ${error.message}`);
