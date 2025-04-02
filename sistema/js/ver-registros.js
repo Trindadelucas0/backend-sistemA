@@ -167,7 +167,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Função para calcular horas trabalhadas
-  function calcularHorasTrabalhadas(registros, cargaHoraria) {
+  function calcularHorasTrabalhadas(registros) {
     let totalHorasTrabalhadas = 0;
     let totalHorasExtras = 0;
     let totalHorasFaltantes = 0;
@@ -209,15 +209,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         
         horasDia = periodoAlmoco;
-
-        // Compara com carga horária
-        if (horasDia > cargaHoraria) {
-            totalHorasExtras += horasDia - cargaHoraria;
-        } else {
-            totalHorasFaltantes += cargaHoraria - horasDia;
-        }
         totalHorasTrabalhadas += horasDia;
     });
+
+    // Calcula horas semanais (44 horas por semana)
+    const horasSemanais = 44;
+    const horasDiarias = horasSemanais / 5; // 5 dias úteis por semana
+    const totalDias = Object.keys(registrosPorData).length;
+    const horasEsperadas = totalDias * horasDiarias;
+
+    // Calcula diferença
+    if (totalHorasTrabalhadas > horasEsperadas) {
+        totalHorasExtras = totalHorasTrabalhadas - horasEsperadas;
+        totalHorasFaltantes = 0;
+    } else {
+        totalHorasFaltantes = horasEsperadas - totalHorasTrabalhadas;
+        totalHorasExtras = 0;
+    }
 
     return {
         horasTrabalhadas: formatarHoras(totalHorasTrabalhadas),
@@ -228,39 +236,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para atualizar cálculos em tempo real
   function atualizarCalculos() {
-    const cargaHoraria = document.getElementById('carga-horaria').value;
-    if (cargaHoraria) {
-        const [horas, minutos] = cargaHoraria.split(':').map(Number);
-        const cargaHorariaDecimal = horas + minutos / 60;
-        
-        const resultado = calcularHorasTrabalhadas(registros, cargaHorariaDecimal);
-        
-        document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
-        document.getElementById('horas-extras').textContent = resultado.horasExtras;
-        document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
-    }
+    const resultado = calcularHorasTrabalhadas(registros);
+    
+    document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
+    document.getElementById('horas-extras').textContent = resultado.horasExtras;
+    document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
   }
 
   // Adiciona event listener para o botão de calcular horas
   document.getElementById('calcular-horas').addEventListener('click', () => {
-    const cargaHoraria = document.getElementById('carga-horaria').value;
-    if (!cargaHoraria) {
-        alert('Por favor, insira a carga horária diária');
-        return;
-    }
-
-    const [horas, minutos] = cargaHoraria.split(':').map(Number);
-    const cargaHorariaDecimal = horas + minutos / 60;
-    
-    const resultado = calcularHorasTrabalhadas(registros, cargaHorariaDecimal);
+    const resultado = calcularHorasTrabalhadas(registros);
     
     document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
     document.getElementById('horas-extras').textContent = resultado.horasExtras;
     document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
   });
-
-  // Adiciona event listener para atualização em tempo real da carga horária
-  document.getElementById('carga-horaria').addEventListener('input', atualizarCalculos);
 
   // Função para ordenar registros por data e hora (mais recentes primeiro)
   function ordenarRegistros(registros) {
@@ -318,20 +308,6 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Erro ao processar dados do usuário:", error);
             alert("Erro nos dados do usuário. Por favor, faça login novamente.");
             window.location.href = "/pages/login.html";
-            return;
-        }
-
-        // Validar carga horária
-        const cargaHoraria = document.getElementById('carga-horaria').value;
-        if (!cargaHoraria) {
-            alert('Por favor, insira a carga horária diária antes de gerar o PDF');
-            return;
-        }
-
-        // Validar formato da carga horária (HH:MM)
-        const cargaHorariaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!cargaHorariaRegex.test(cargaHoraria)) {
-            alert('Por favor, insira a carga horária no formato HH:MM (ex: 08:00)');
             return;
         }
 
