@@ -332,6 +332,13 @@ document.addEventListener("DOMContentLoaded", function () {
             throw new Error('O período selecionado não pode exceder 1 ano');
         }
 
+        // Calcular horas antes de gerar o PDF
+        const resultado = calcularHorasTrabalhadas(registros);
+
+        // Agrupar registros por data
+        const registrosOrdenados = ordenarRegistros(registros);
+        const registrosAgrupados = agruparPorData(registrosOrdenados);
+
         // Criar documento PDF
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({
@@ -360,86 +367,88 @@ document.addEventListener("DOMContentLoaded", function () {
         doc.setFont(undefined, 'bold');
         doc.text('REGISTRO DE PONTO', 105, margemSuperior, { align: 'center' });
 
+        // Espaçamento após o título
+        let yPos = margemSuperior + 15;
+
         doc.setFontSize(12);
         doc.setFont(undefined, 'normal');
-        doc.text(`Período: ${formatarData(dataInicial)} a ${formatarData(dataFinal)}`, 105, margemSuperior + 10, { align: 'center' });
+        doc.text(`Período: ${formatarData(dataInicial)} a ${formatarData(dataFinal)}`, 105, yPos, { align: 'center' });
 
-        // Informações do funcionário
+        // Informações do funcionário com espaçamento adequado
+        yPos += 20;
         doc.setFontSize(10);
-        doc.text('Informações do Funcionário:', margemEsquerda, margemSuperior + 20);
-        doc.text(`Nome: ${usuario.nome}`, margemEsquerda, margemSuperior + 25);
-        doc.text(`Email: ${usuario.email}`, margemEsquerda, margemSuperior + 30);
-        doc.text(`Carga Horária: ${document.getElementById('carga-horaria').value}`, margemEsquerda, margemSuperior + 35);
+        doc.text('Informações do Funcionário:', margemEsquerda, yPos);
+        yPos += 8;
+        doc.text(`Nome: ${usuario.nome}`, margemEsquerda, yPos);
+        yPos += 8;
+        doc.text(`Email: ${usuario.email}`, margemEsquerda, yPos);
+        yPos += 8;
+        doc.text(`Carga Horária Semanal: 44 horas`, margemEsquerda, yPos);
 
-        // Resumo
+        // Resumo com espaçamento adequado
+        yPos += 20;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text('Resumo do Período', 105, margemSuperior + 50, { align: 'center' });
+        doc.text('Resumo do Período', 105, yPos, { align: 'center' });
 
+        yPos += 15;
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
-        const horasTrabalhadas = document.getElementById('horas-trabalhadas').textContent;
-        const horasExtras = document.getElementById('horas-extras').textContent;
-        const horasFaltantes = document.getElementById('horas-faltantes').textContent;
-
-        doc.text(`Total de Horas Trabalhadas: ${horasTrabalhadas}`, margemEsquerda, margemSuperior + 60);
+        doc.text(`Total de Horas Trabalhadas: ${resultado.horasTrabalhadas}`, margemEsquerda, yPos);
+        yPos += 8;
         doc.setFont(undefined, 'bold');
         doc.setTextColor(0, 0, 255);
-        doc.text(`Horas Extras: ${horasExtras}`, margemEsquerda, margemSuperior + 65);
+        doc.text(`Horas Extras: ${resultado.horasExtras}`, margemEsquerda, yPos);
+        yPos += 8;
         doc.setTextColor(255, 0, 0);
-        doc.text(`Horas Faltantes: ${horasFaltantes}`, margemEsquerda, margemSuperior + 70);
+        doc.text(`Horas Faltantes: ${resultado.horasFaltantes}`, margemEsquerda, yPos);
         doc.setTextColor(0, 0, 0);
 
-        // Tabela de registros
-        let yPos = margemSuperior + 80;
-        const registrosOrdenados = ordenarRegistros(registros);
-        const registrosAgrupados = agruparPorData(registrosOrdenados);
+        // Tabela de registros com espaçamento adequado
+        yPos += 20;
 
         // Cabeçalho da tabela
         doc.setFillColor(245, 245, 245);
-        doc.rect(margemEsquerda, yPos, larguraUtil, 8, 'F');
+        doc.rect(margemEsquerda, yPos, larguraUtil, 10, 'F');
         doc.setFont(undefined, 'bold');
-        doc.text('Data', margemEsquerda + 5, yPos + 5);
-        doc.text('Tipo', margemEsquerda + 50, yPos + 5);
-        doc.text('Horário', margemEsquerda + 80, yPos + 5);
-        doc.text('Foto', margemEsquerda + 110, yPos + 5);
+        doc.setTextColor(0, 0, 0);
+        yPos += 7;
+        doc.text('Data', margemEsquerda + 5, yPos);
+        doc.text('Tipo', margemEsquerda + 50, yPos);
+        doc.text('Horário', margemEsquerda + 100, yPos);
 
-        yPos += 10;
-
-        // Dados da tabela
+        // Dados da tabela com fotos
         doc.setFont(undefined, 'normal');
         for (const [data, registrosDia] of Object.entries(registrosAgrupados)) {
             // Verificar se precisa de nova página
-            if (yPos > 150) {
+            if (yPos > 250) {
                 doc.addPage();
                 yPos = margemSuperior;
                 
                 // Adicionar cabeçalho na nova página
                 doc.setFillColor(245, 245, 245);
-                doc.rect(margemEsquerda, yPos, larguraUtil, 8, 'F');
+                doc.rect(margemEsquerda, yPos, larguraUtil, 10, 'F');
                 doc.setFont(undefined, 'bold');
-                doc.text('Data', margemEsquerda + 5, yPos + 5);
-                doc.text('Tipo', margemEsquerda + 50, yPos + 5);
-                doc.text('Horário', margemEsquerda + 80, yPos + 5);
-                doc.text('Foto', margemEsquerda + 110, yPos + 5);
+                yPos += 7;
+                doc.text('Data', margemEsquerda + 5, yPos);
+                doc.text('Tipo', margemEsquerda + 50, yPos);
+                doc.text('Horário', margemEsquerda + 100, yPos);
                 yPos += 10;
             }
 
             // Data
+            yPos += 10;
             doc.setFont(undefined, 'bold');
-            doc.text(formatarData(new Date(data)), margemEsquerda + 5, yPos + 5);
-            yPos += 8;
+            doc.text(formatarData(new Date(data)), margemEsquerda + 5, yPos);
             
             // Registros do dia
             for (const registro of registrosDia) {
-                // Tipo
+                yPos += 8;
                 doc.setFont(undefined, 'normal');
-                doc.text(registro.tipoPonto, margemEsquerda + 50, yPos + 5);
-                
-                // Horário
-                doc.text(registro.hora, margemEsquerda + 80, yPos + 5);
-                
-                // Foto
+                doc.text(registro.tipoPonto, margemEsquerda + 50, yPos);
+                doc.text(registro.hora, margemEsquerda + 100, yPos);
+
+                // Adicionar foto se existir
                 if (registro.foto && registro.foto.length > 0) {
                     try {
                         const img = new Image();
@@ -447,63 +456,38 @@ document.addEventListener("DOMContentLoaded", function () {
                         await new Promise((resolve) => {
                             img.onload = resolve;
                         });
-                        
-                        // Verificar se a imagem atual cabe na página
-                        const alturaNecessaria = 120;
-                        if (yPos + alturaNecessaria > 250) {
+
+                        // Verificar se precisa de nova página para a foto
+                        if (yPos > 200) {
                             doc.addPage();
                             yPos = margemSuperior;
-                            
-                            // Adicionar cabeçalho na nova página
-                            doc.setFillColor(245, 245, 245);
-                            doc.rect(margemEsquerda, yPos, larguraUtil, 8, 'F');
-                            doc.setFont(undefined, 'bold');
-                            doc.text('Data', margemEsquerda + 5, yPos + 5);
-                            doc.text('Tipo', margemEsquerda + 50, yPos + 5);
-                            doc.text('Horário', margemEsquerda + 80, yPos + 5);
-                            doc.text('Foto', margemEsquerda + 110, yPos + 5);
-                            yPos += 10;
-                            
-                            // Adicionar informações do registro na nova página
-                            doc.setFont(undefined, 'bold');
-                            doc.text(formatarData(new Date(data)), margemEsquerda + 5, yPos + 5);
-                            doc.setFont(undefined, 'normal');
-                            doc.text(registro.tipoPonto, margemEsquerda + 50, yPos + 5);
-                            doc.text(registro.hora, margemEsquerda + 80, yPos + 5);
-                            yPos += 8;
                         }
-                        
-                        // Redimensionar e adicionar foto
-                        const maxWidth = 120;
-                        const maxHeight = 90;
+
+                        // Adicionar foto em tamanho maior
+                        const maxWidth = 160; // Largura máxima da foto
+                        const maxHeight = 120; // Altura máxima da foto
                         const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
                         const width = img.width * ratio;
                         const height = img.height * ratio;
-                        
-                        // Centralizar a foto horizontalmente
-                        const xPos = margemEsquerda + 110 + (maxWidth - width) / 2;
-                        doc.addImage(img, 'JPEG', xPos, yPos - 5, width, height);
-                        
-                        // Ajustar posição Y após adicionar a foto
-                        yPos += height + 10;
+
+                        // Centralizar a foto
+                        const xPos = margemEsquerda + (larguraUtil - width) / 2;
+                        doc.addImage(img, 'JPEG', xPos, yPos + 5, width, height);
+                        yPos += height + 15; // Espaço após a foto
                     } catch (error) {
                         console.error('Erro ao processar foto:', error);
-                        doc.text('N/A', margemEsquerda + 110, yPos + 5);
-                        yPos += 10;
+                        yPos += 5;
                     }
-                } else {
-                    doc.text('N/A', margemEsquerda + 110, yPos + 5);
-                    yPos += 10;
                 }
             }
             
-            // Adicionar linha separadora
+            // Linha separadora
+            yPos += 5;
             doc.setDrawColor(200, 200, 200);
             doc.line(margemEsquerda, yPos, 210 - margemDireita, yPos);
-            yPos += 5;
         }
 
-        // Adicionar página de resumo com todos os registros sem fotos
+        // Adicionar página de resumo sem fotos
         doc.addPage();
         yPos = margemSuperior;
 
@@ -511,16 +495,17 @@ document.addEventListener("DOMContentLoaded", function () {
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.text('RESUMO DE REGISTROS', 105, yPos, { align: 'center' });
-        yPos += 15;
+        yPos += 20;
 
         // Cabeçalho da tabela de resumo
         doc.setFillColor(245, 245, 245);
-        doc.rect(margemEsquerda, yPos, larguraUtil, 8, 'F');
+        doc.rect(margemEsquerda, yPos, larguraUtil, 10, 'F');
         doc.setFontSize(10);
         doc.setFont(undefined, 'bold');
-        doc.text('Data', margemEsquerda + 5, yPos + 5);
-        doc.text('Tipo', margemEsquerda + 50, yPos + 5);
-        doc.text('Horário', margemEsquerda + 80, yPos + 5);
+        yPos += 7;
+        doc.text('Data', margemEsquerda + 5, yPos);
+        doc.text('Tipo', margemEsquerda + 50, yPos);
+        doc.text('Horário', margemEsquerda + 100, yPos);
         yPos += 10;
 
         // Dados da tabela de resumo
@@ -533,79 +518,98 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 // Adicionar cabeçalho na nova página
                 doc.setFillColor(245, 245, 245);
-                doc.rect(margemEsquerda, yPos, larguraUtil, 8, 'F');
+                doc.rect(margemEsquerda, yPos, larguraUtil, 10, 'F');
                 doc.setFont(undefined, 'bold');
-                doc.text('Data', margemEsquerda + 5, yPos + 5);
-                doc.text('Tipo', margemEsquerda + 50, yPos + 5);
-                doc.text('Horário', margemEsquerda + 80, yPos + 5);
+                yPos += 7;
+                doc.text('Data', margemEsquerda + 5, yPos);
+                doc.text('Tipo', margemEsquerda + 50, yPos);
+                doc.text('Horário', margemEsquerda + 100, yPos);
                 yPos += 10;
             }
 
             // Data
-            doc.setFont(undefined, 'bold');
-            doc.text(formatarData(new Date(data)), margemEsquerda + 5, yPos + 5);
             yPos += 8;
+            doc.setFont(undefined, 'bold');
+            doc.text(formatarData(new Date(data)), margemEsquerda + 5, yPos);
             
             // Registros do dia
             for (const registro of registrosDia) {
-                doc.setFont(undefined, 'normal');
-                doc.text(registro.tipoPonto, margemEsquerda + 50, yPos + 5);
-                doc.text(registro.hora, margemEsquerda + 80, yPos + 5);
                 yPos += 8;
+                doc.setFont(undefined, 'normal');
+                doc.text(registro.tipoPonto, margemEsquerda + 50, yPos);
+                doc.text(registro.hora, margemEsquerda + 100, yPos);
             }
             
-            // Adicionar linha separadora
+            // Linha separadora
+            yPos += 5;
             doc.setDrawColor(200, 200, 200);
             doc.line(margemEsquerda, yPos, 210 - margemDireita, yPos);
-            yPos += 5;
         }
 
-        // Adicionar resumo de horas no final
-        yPos += 10;
+        // Adicionar resumo final de horas
+        yPos += 20;
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text('Resumo de Horas:', margemEsquerda, yPos);
+        doc.text('Resumo Final de Horas:', margemEsquerda, yPos);
         yPos += 10;
         
         doc.setFontSize(10);
         doc.setFont(undefined, 'normal');
-        doc.text(`Total de Horas Trabalhadas: ${horasTrabalhadas}`, margemEsquerda, yPos);
+        doc.text(`Total de Horas Trabalhadas: ${resultado.horasTrabalhadas}`, margemEsquerda, yPos);
         yPos += 8;
         doc.setFont(undefined, 'bold');
         doc.setTextColor(0, 0, 255);
-        doc.text(`Horas Extras: ${horasExtras}`, margemEsquerda, yPos);
+        doc.text(`Horas Extras: ${resultado.horasExtras}`, margemEsquerda, yPos);
         yPos += 8;
         doc.setTextColor(255, 0, 0);
-        doc.text(`Horas Faltantes: ${horasFaltantes}`, margemEsquerda, yPos);
-        yPos += 8;
+        doc.text(`Horas Faltantes: ${resultado.horasFaltantes}`, margemEsquerda, yPos);
+        doc.setTextColor(0, 0, 0);
 
-        // Adicionar espaço para assinatura
-        yPos = 297 - margemInferior - 40;
+        // Se a posição atual estiver muito próxima do final da página, adicionar nova página
+        if (yPos > 220) {
+            doc.addPage();
+            yPos = margemSuperior;
+        }
+
+        // Calcular posição para assinatura (sempre na parte inferior da página)
+        const alturaAssinatura = 40; // Altura total necessária para assinatura
+        const espacoNecessario = alturaAssinatura + 30; // Espaço necessário + margem de segurança
+
+        // Se não houver espaço suficiente, adicionar nova página
+        if (yPos > (297 - margemInferior - espacoNecessario)) {
+            doc.addPage();
+            yPos = margemSuperior;
+        }
+
+        // Posicionar assinatura
+        yPos = 297 - margemInferior - alturaAssinatura;
+        
+        // Linha de assinatura
+        doc.setDrawColor(0, 0, 0);
         doc.line(margemEsquerda, yPos, margemEsquerda + 100, yPos);
+        
+        // Texto "Assinatura do Funcionário"
         doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
         doc.text('Assinatura do Funcionário', margemEsquerda + 50, yPos + 5, { align: 'center' });
         
         // Data da assinatura
         const dataAtual = new Date();
-        dataAtual.setHours(dataAtual.getHours() + 3);
         doc.text(`Data: ${dataAtual.toLocaleDateString('pt-BR')}`, margemEsquerda + 50, yPos + 15, { align: 'center' });
 
-        // Rodapé
+        // Rodapé em todas as páginas
         const ultimaPagina = doc.internal.getNumberOfPages();
         for (let i = 1; i <= ultimaPagina; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
-            doc.text(`Página ${i} de ${ultimaPagina}`, 105, 297 - margemInferior + 5, { align: 'center' });
-            doc.text('Documento para uso interno - Sistema de Ponto', 105, 297 - margemInferior + 10, { align: 'center' });
-            
-            // Marca d'água (email do usuário)
-            doc.setTextColor(200, 200, 200);
-            doc.setFontSize(12);
-            doc.text(usuario.email, 210 - margemDireita - 5, margemSuperior + 5, { align: 'right' });
+            doc.setTextColor(128, 128, 128);
+            doc.text(`Página ${i} de ${ultimaPagina}`, 105, 287, { align: 'center' });
+            doc.text('Documento para uso interno - Sistema de Ponto', 105, 292, { align: 'center' });
         }
 
         // Salvar PDF
-        const nomeArquivo = `Ponto_${usuario.nome.replace(/\s+/g, '_')}_${formatarData(dataInicial)}_${formatarData(dataFinal)}.pdf`;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const nomeArquivo = `Ponto_${usuario.nome.replace(/\s+/g, '_')}_${formatarData(dataInicial)}_${formatarData(dataFinal)}_${timestamp}.pdf`;
         doc.save(nomeArquivo);
 
         // Remover indicador de carregamento
