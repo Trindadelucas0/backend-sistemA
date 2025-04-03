@@ -325,20 +325,11 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${dataFormatada}</td>
         <td>${tipoPontoFormatado}</td>
         <td>${registro.hora}</td>
-        <td>
-          ${registro.foto && registro.foto.length > 0 ? 
-            `<div class="fotos-container">
-              ${registro.foto.map((foto, index) => `
-                <div class="foto-item">
-                  <img src="${foto}" alt="Foto ${index + 1}" class="foto-thumbnail">
-                  <a href="${foto}" download="foto_${registro.tipoPonto}_${index + 1}.jpg" class="download-link">
-                    <i class="fas fa-download"></i>
-                  </a>
-                </div>
-              `).join('')}
-            </div>` : 
-            "Sem fotos"}
-        </td>
+        <td>${registro.foto && registro.foto.length > 0 ? 
+          `<button class="btn-view-fotos" data-id="${registro.id}">
+            <i class="fas fa-image"></i> Ver Fotos (${registro.foto.length})
+          </button>` : 
+          "Sem fotos"}</td>
         <td>
           <button class="action-btn btn-edit" data-id="${registro.id}">
             <i class="fas fa-edit"></i> Editar
@@ -353,6 +344,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     // Adicionar event listeners aos botões
+    document.querySelectorAll(".btn-view-fotos").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const registroId = btn.getAttribute("data-id");
+        const registro = registros.find(r => r.id === registroId);
+        if (registro && registro.foto && registro.foto.length > 0) {
+          // Implementar visualização de fotos
+          alert("Visualização de fotos será implementada em breve.");
+        }
+      });
+    });
+    
     document.querySelectorAll(".btn-edit").forEach(btn => {
       btn.addEventListener("click", () => {
         const registroId = btn.getAttribute("data-id");
@@ -422,12 +424,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para calcular horas trabalhadas
   function calcularHorasTrabalhadas(registros) {
-    let totalHorasTrabalhadas = 0;
-    let totalHorasExtras = 0;
-    let totalHorasFaltantes = 0;
-
-    // Agrupa registros por data
+    // Agrupar registros por data
     const registrosPorData = {};
+    
     registros.forEach(registro => {
       const data = new Date(registro.data).toISOString().split('T')[0];
       if (!registrosPorData[data]) {
@@ -435,60 +434,61 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       registrosPorData[data].push(registro);
     });
-
-    // Calcula horas por dia
-    Object.values(registrosPorData).forEach(registrosDia => {
-      // Ordena registros por hora
-      registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
+    
+    let totalHorasTrabalhadas = 0;
+    let totalHorasExtras = 0;
+    let totalHorasFaltantes = 0;
+    
+    // Calcular horas para cada dia
+    Object.keys(registrosPorData).forEach(data => {
+      const registrosDia = registrosPorData[data];
       
-      let minutosDia = 0;
+      // Ordenar registros por hora
+      registrosDia.sort((a, b) => {
+        const horaA = a.hora.split(':').map(Number);
+        const horaB = b.hora.split(':').map(Number);
+        return (horaA[0] * 60 + horaA[1]) - (horaB[0] * 60 + horaB[1]);
+      });
       
-      // Encontra os registros do dia
+      // Encontrar entrada e saída
       const entrada = registrosDia.find(r => r.tipoPonto === 'entrada');
-      const almoco = registrosDia.find(r => r.tipoPonto === 'almoco');
-      const retorno = registrosDia.find(r => r.tipoPonto === 'retorno');
       const saida = registrosDia.find(r => r.tipoPonto === 'saida');
-
+      
       if (entrada && saida) {
-        // Calcula período da manhã (entrada até almoço)
-        if (entrada && almoco) {
-          const [horaEntrada, minutoEntrada] = entrada.hora.split(':').map(Number);
-          const [horaAlmoco, minutoAlmoco] = almoco.hora.split(':').map(Number);
-          const minutosManha = (horaAlmoco * 60 + minutoAlmoco) - (horaEntrada * 60 + minutoEntrada);
-          minutosDia += minutosManha;
+        // Calcular horas trabalhadas
+        const horaEntrada = entrada.hora.split(':').map(Number);
+        const horaSaida = saida.hora.split(':').map(Number);
+        
+        let minutosTrabalhados = (horaSaida[0] * 60 + horaSaida[1]) - (horaEntrada[0] * 60 + horaEntrada[1]);
+        
+        // Verificar se há almoço
+        const almoco = registrosDia.find(r => r.tipoPonto === 'almoco');
+        const retorno = registrosDia.find(r => r.tipoPonto === 'retorno');
+        
+        if (almoco && retorno) {
+          const horaAlmoco = almoco.hora.split(':').map(Number);
+          const horaRetorno = retorno.hora.split(':').map(Number);
+          
+          const minutosAlmoco = (horaRetorno[0] * 60 + horaRetorno[1]) - (horaAlmoco[0] * 60 + horaAlmoco[1]);
+          minutosTrabalhados -= minutosAlmoco;
         }
         
-        // Calcula período da tarde (retorno até saída)
-        if (retorno && saida) {
-          const [horaRetorno, minutoRetorno] = retorno.hora.split(':').map(Number);
-          const [horaSaida, minutoSaida] = saida.hora.split(':').map(Number);
-          const minutosTarde = (horaSaida * 60 + minutoSaida) - (horaRetorno * 60 + minutoRetorno);
-          minutosDia += minutosTarde;
-        }
+        // Converter para horas
+        const horasTrabalhadas = Math.floor(minutosTrabalhados / 60);
+        const minutosRestantes = minutosTrabalhados % 60;
         
-        // Converte minutos para horas
-        const horasDia = minutosDia / 60;
-
-        // Calcula horas extras/faltantes baseado no horário padrão (9 horas por dia)
-        const horasEsperadasDia = 9; // 9 horas por dia (07:00 às 17:00 com 1 hora de almoço)
+        // Adicionar ao total
+        totalHorasTrabalhadas += horasTrabalhadas;
         
-        // Se trabalhou mais que o esperado
-        if (horasDia > horasEsperadasDia) {
-          totalHorasExtras += horasDia - horasEsperadasDia;
-          totalHorasTrabalhadas += horasEsperadasDia;
-        } 
-        // Se trabalhou menos que o esperado
-        else if (horasDia < horasEsperadasDia) {
-          totalHorasFaltantes += horasEsperadasDia - horasDia;
-          totalHorasTrabalhadas += horasDia;
-        }
-        // Se trabalhou exatamente o esperado
-        else {
-          totalHorasTrabalhadas += horasEsperadasDia;
+        // Calcular horas extras (acima de 8 horas)
+        if (horasTrabalhadas > 8) {
+          totalHorasExtras += horasTrabalhadas - 8;
+        } else if (horasTrabalhadas < 8) {
+          totalHorasFaltantes += 8 - horasTrabalhadas;
         }
       }
     });
-
+    
     return {
       horasTrabalhadas: formatarHoras(totalHorasTrabalhadas),
       horasExtras: formatarHoras(totalHorasExtras),
@@ -496,11 +496,9 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
-  // Função para formatar horas no formato HH:MM
+  // Função para formatar horas
   function formatarHoras(horas) {
-    const horasInt = Math.floor(horas);
-    const minutos = Math.round((horas - horasInt) * 60);
-    return `${horasInt.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+    return `${String(horas).padStart(2, '0')}:00`;
   }
 
   // Função para atualizar os cálculos
