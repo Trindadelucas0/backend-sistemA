@@ -30,78 +30,31 @@ document.addEventListener("DOMContentLoaded", function () {
   const cancelarEdicaoBtn = document.getElementById("cancelar-edicao");
 
   let registros = [];
-  let registrosFiltrados = [];
   let registroEditando = null;
   let campoEditando = null;
 
   // Função para buscar registros do backend
   async function buscarRegistros() {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token não encontrado");
-      }
-
-      console.log("Iniciando busca de registros...");
-      console.log("Token:", token.substring(0, 20) + "...");
-
       const response = await fetch("http://localhost:3000/registros", {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      console.log("Status da resposta:", response.status);
-      console.log("Headers da resposta:", Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Erro ao buscar registros: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Dados recebidos:", data);
-      
-      // Verifica se os dados estão dentro de um objeto com a propriedade registros
-      if (data && data.registros) {
+      if (response.ok) {
+        const data = await response.json();
         registros = data.registros;
-      } else if (Array.isArray(data)) {
-        registros = data;
+        console.log("Registros atualizados:", registros); // Log para debug
+        exibirRegistros();
       } else {
-        throw new Error("Formato de dados inválido: resposta não contém registros");
-      }
-      
-      // Ordena os registros por data (mais recente primeiro)
-      registros.sort((a, b) => new Date(b.data) - new Date(a.data));
-      
-      // Pega a data mais recente
-      const dataMaisRecente = registros[0] ? new Date(registros[0].data).toISOString().split('T')[0] : null;
-      
-      // Define as datas inicial e final como a data mais recente
-      document.getElementById('data-inicial').value = dataMaisRecente;
-      document.getElementById('data-final').value = dataMaisRecente;
-      
-      // Filtra apenas os registros do dia mais recente
-      registrosFiltrados = filtrarRegistrosPorData(dataMaisRecente, dataMaisRecente);
-      
-      atualizarTabelaRegistros();
-      atualizarCalculos();
-    } catch (error) {
-      console.error("Erro detalhado:", error);
-      
-      // Verifica se é um erro de conexão
-      if (error.message === "Failed to fetch") {
-        alert("Não foi possível conectar ao servidor. Verifique se o backend está rodando na porta 3000.");
-      } else {
+        const error = await response.json();
         alert(`Erro ao buscar registros: ${error.message}`);
       }
-      
-      // Se o erro for de autenticação, redireciona para o login
-      if (error.message.includes("Token") || error.message.includes("não autorizado")) {
-        window.location.href = "/sistema/pages/login.html";
-      }
+    } catch (err) {
+      console.error("Erro ao buscar registros:", err);
+      alert("Erro no servidor. Tente novamente mais tarde.");
     }
   }
 
@@ -235,6 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
         registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
         
         let horasDia = 0;
+        let periodoAlmoco = 0;
         
         // Calcula período da manhã (entrada até almoço)
         const entrada = registrosDia.find(r => r.tipoPonto === 'entrada');
@@ -242,7 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (entrada && almoco) {
             const horaEntrada = new Date(`2000-01-01T${entrada.hora}`);
             const horaAlmoco = new Date(`2000-01-01T${almoco.hora}`);
-            horasDia += (horaAlmoco - horaEntrada) / (1000 * 60 * 60);
+            periodoAlmoco += (horaAlmoco - horaEntrada) / (1000 * 60 * 60);
         }
         
         // Calcula período da tarde (retorno até saída)
@@ -251,9 +205,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (retorno && saida) {
             const horaRetorno = new Date(`2000-01-01T${retorno.hora}`);
             const horaSaida = new Date(`2000-01-01T${saida.hora}`);
-            horasDia += (horaSaida - horaRetorno) / (1000 * 60 * 60);
+            periodoAlmoco += (horaSaida - horaRetorno) / (1000 * 60 * 60);
         }
         
+        horasDia = periodoAlmoco;
         totalHorasTrabalhadas += horasDia;
     });
 
@@ -281,7 +236,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para atualizar cálculos em tempo real
   function atualizarCalculos() {
-    const resultado = calcularHorasTrabalhadas(registrosFiltrados);
+    const resultado = calcularHorasTrabalhadas(registros);
     
     document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
     document.getElementById('horas-extras').textContent = resultado.horasExtras;
@@ -290,7 +245,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Adiciona event listener para o botão de calcular horas
   document.getElementById('calcular-horas').addEventListener('click', () => {
-    const resultado = calcularHorasTrabalhadas(registrosFiltrados);
+    const resultado = calcularHorasTrabalhadas(registros);
     
     document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
     document.getElementById('horas-extras').textContent = resultado.horasExtras;
@@ -962,95 +917,4 @@ document.addEventListener("DOMContentLoaded", function () {
     // Preenche o formulário com a data atual
     document.getElementById("editar-data").value = ajustarData(registro.data);
   };
-
-  // Função para filtrar registros por data
-  function filtrarRegistrosPorData(dataInicial, dataFinal) {
-    if (!dataInicial || !dataFinal) {
-      return registros;
-    }
-    
-    // Converte as datas para objetos Date
-    const dataInicialObj = new Date(dataInicial);
-    const dataFinalObj = new Date(dataFinal);
-    
-    // Ajusta as datas para considerar o dia inteiro
-    dataInicialObj.setHours(0, 0, 0, 0);
-    dataFinalObj.setHours(23, 59, 59, 999);
-    
-    // Filtra os registros
-    return registros.filter(registro => {
-      // Converte a data do registro para objeto Date
-      const dataRegistro = new Date(registro.data);
-      
-      // Compara as datas
-      return dataRegistro >= dataInicialObj && dataRegistro <= dataFinalObj;
-    });
-  }
-
-  // Função para atualizar a tabela com os registros filtrados
-  function atualizarTabelaRegistros() {
-    const tbody = document.querySelector("#tabela-registros tbody");
-    tbody.innerHTML = "";
-
-    if (registrosFiltrados.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">Nenhum registro encontrado para o período selecionado.</td></tr>';
-      return;
-    }
-
-    // Ordena os registros por data e hora
-    registrosFiltrados.sort((a, b) => {
-      const dataA = new Date(a.data);
-      const dataB = new Date(b.data);
-      if (dataA.getTime() === dataB.getTime()) {
-        return a.hora.localeCompare(b.hora);
-      }
-      return dataB.getTime() - dataA.getTime();
-    });
-
-    registrosFiltrados.forEach((registro, index) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${formatarDataLocal(registro.data)}</td>
-            <td>${registro.tipoPonto}</td>
-            <td>${registro.hora}</td>
-            <td>
-                ${registro.foto && registro.foto.length > 0
-                    ? registro.foto.map((foto, i) => `
-                        <img src="${foto}" style="width: 50px;">
-                        <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
-                    `).join("")
-                    : "Nenhuma foto"}
-            </td>
-            <td>
-                <button onclick="editarCampo(${index}, 'data')">Editar Data</button>
-                <button onclick="editarCampo(${index}, 'tipoPonto')">Editar Tipo</button>
-                <button onclick="editarCampo(${index}, 'hora')">Editar Hora</button>
-                <button onclick="editarCampo(${index}, 'foto')">Editar Fotos</button>
-                <button onclick="removerRegistro(${index})">Remover</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-  }
-
-  // Adiciona event listener para o botão de filtrar datas
-  document.getElementById('filtrar-datas').addEventListener('click', () => {
-    const dataInicial = document.getElementById('data-inicial').value;
-    const dataFinal = document.getElementById('data-final').value;
-    
-    if (!dataInicial || !dataFinal) {
-      alert("Por favor, selecione as datas inicial e final");
-      return;
-    }
-
-    // Valida se a data final não é anterior à data inicial
-    if (new Date(dataFinal) < new Date(dataInicial)) {
-      alert("A data final não pode ser anterior à data inicial");
-      return;
-    }
-    
-    registrosFiltrados = filtrarRegistrosPorData(dataInicial, dataFinal);
-    atualizarTabelaRegistros();
-    atualizarCalculos();
-  });
 });
