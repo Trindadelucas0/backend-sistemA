@@ -234,43 +234,40 @@ document.addEventListener("DOMContentLoaded", function () {
         // Ordena registros por hora
         registrosDia.sort((a, b) => a.hora.localeCompare(b.hora));
         
-        let horasDia = 0;
+        let minutosDia = 0;
         
         // Calcula período da manhã (entrada até almoço)
         const entrada = registrosDia.find(r => r.tipoPonto === 'entrada');
         const almoco = registrosDia.find(r => r.tipoPonto === 'almoco');
         if (entrada && almoco) {
-            const horaEntrada = new Date(`2000-01-01T${entrada.hora}`);
-            const horaAlmoco = new Date(`2000-01-01T${almoco.hora}`);
-            horasDia += (horaAlmoco - horaEntrada) / (1000 * 60 * 60);
+            const [horaEntrada, minutoEntrada] = entrada.hora.split(':').map(Number);
+            const [horaAlmoco, minutoAlmoco] = almoco.hora.split(':').map(Number);
+            const minutosManha = (horaAlmoco * 60 + minutoAlmoco) - (horaEntrada * 60 + minutoEntrada);
+            minutosDia += minutosManha;
         }
         
         // Calcula período da tarde (retorno até saída)
         const retorno = registrosDia.find(r => r.tipoPonto === 'retorno');
         const saida = registrosDia.find(r => r.tipoPonto === 'saida');
         if (retorno && saida) {
-            const horaRetorno = new Date(`2000-01-01T${retorno.hora}`);
-            const horaSaida = new Date(`2000-01-01T${saida.hora}`);
-            horasDia += (horaSaida - horaRetorno) / (1000 * 60 * 60);
+            const [horaRetorno, minutoRetorno] = retorno.hora.split(':').map(Number);
+            const [horaSaida, minutoSaida] = saida.hora.split(':').map(Number);
+            const minutosTarde = (horaSaida * 60 + minutoSaida) - (horaRetorno * 60 + minutoRetorno);
+            minutosDia += minutosTarde;
         }
         
+        // Converte minutos para horas
+        const horasDia = minutosDia / 60;
         totalHorasTrabalhadas += horasDia;
+
+        // Calcula horas extras/faltantes do dia
+        const horasEsperadasDia = 9; // 9 horas por dia
+        if (horasDia > horasEsperadasDia) {
+            totalHorasExtras += horasDia - horasEsperadasDia;
+        } else {
+            totalHorasFaltantes += horasEsperadasDia - horasDia;
+        }
     });
-
-    // Calcula horas semanais (44 horas por semana)
-    const horasSemanais = 44;
-    const horasDiarias = horasSemanais / 5; // 5 dias úteis por semana
-    const totalDias = Object.keys(registrosPorData).length;
-    const horasEsperadas = totalDias * horasDiarias;
-
-    // Calcula diferença
-    if (totalHorasTrabalhadas > horasEsperadas) {
-        totalHorasExtras = totalHorasTrabalhadas - horasEsperadas;
-        totalHorasFaltantes = 0;
-    } else {
-        totalHorasFaltantes = horasEsperadas - totalHorasTrabalhadas;
-        totalHorasExtras = 0;
-    }
 
     return {
         horasTrabalhadas: formatarHoras(totalHorasTrabalhadas),
@@ -281,6 +278,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para atualizar cálculos em tempo real
   function atualizarCalculos() {
+    // Usa os registros filtrados para o cálculo
     const resultado = calcularHorasTrabalhadas(registrosFiltrados);
     
     document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
@@ -288,13 +286,26 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
   }
 
+  // Adiciona event listeners para os filtros de data
+  document.getElementById('data-inicial').addEventListener('change', function() {
+    const dataInicial = this.value;
+    const dataFinal = document.getElementById('data-final').value;
+    registrosFiltrados = filtrarRegistrosPorData(dataInicial, dataFinal);
+    atualizarTabelaRegistros();
+    atualizarCalculos();
+  });
+
+  document.getElementById('data-final').addEventListener('change', function() {
+    const dataInicial = document.getElementById('data-inicial').value;
+    const dataFinal = this.value;
+    registrosFiltrados = filtrarRegistrosPorData(dataInicial, dataFinal);
+    atualizarTabelaRegistros();
+    atualizarCalculos();
+  });
+
   // Adiciona event listener para o botão de calcular horas
   document.getElementById('calcular-horas').addEventListener('click', () => {
-    const resultado = calcularHorasTrabalhadas(registrosFiltrados);
-    
-    document.getElementById('horas-trabalhadas').textContent = resultado.horasTrabalhadas;
-    document.getElementById('horas-extras').textContent = resultado.horasExtras;
-    document.getElementById('horas-faltantes').textContent = resultado.horasFaltantes;
+    atualizarCalculos();
   });
 
   // Função para ordenar registros por data e hora (mais recentes primeiro)
@@ -356,9 +367,9 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Validar se existem registros
-        if (!registros || registros.length === 0) {
-            alert('Não existem registros de ponto para gerar o relatório');
+        // Validar se existem registros filtrados
+        if (!registrosFiltrados || registrosFiltrados.length === 0) {
+            alert('Não existem registros de ponto para o período selecionado');
             return;
         }
 
@@ -368,20 +379,15 @@ document.addEventListener("DOMContentLoaded", function () {
         loadingDiv.innerHTML = '<div class="spinner"></div><p>Gerando relatório...</p>';
         document.body.appendChild(loadingDiv);
 
-        // Validar período (máximo 1 ano)
-        const dataInicial = new Date(Math.min(...registros.map(r => new Date(r.data))));
-        const dataFinal = new Date(Math.max(...registros.map(r => new Date(r.data))));
-        const diffAnos = (dataFinal - dataInicial) / (1000 * 60 * 60 * 24 * 365);
-        
-        if (diffAnos > 1) {
-            throw new Error('O período selecionado não pode exceder 1 ano');
-        }
+        // Obter datas inicial e final do filtro
+        const dataInicial = document.getElementById('data-inicial').value;
+        const dataFinal = document.getElementById('data-final').value;
 
         // Calcular horas antes de gerar o PDF
-        const resultado = calcularHorasTrabalhadas(registros);
+        const resultado = calcularHorasTrabalhadas(registrosFiltrados);
 
         // Agrupar registros por data
-        const registrosOrdenados = ordenarRegistros(registros);
+        const registrosOrdenados = ordenarRegistros(registrosFiltrados);
         const registrosAgrupados = agruparPorData(registrosOrdenados);
 
         // Criar documento PDF
@@ -417,7 +423,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         doc.setFontSize(12);
         doc.setFont(undefined, 'normal');
-        doc.text(`Período: ${formatarData(dataInicial)} a ${formatarData(dataFinal)}`, 105, yPos, { align: 'center' });
+        doc.text(`Período: ${formatarData(new Date(dataInicial))} a ${formatarData(new Date(dataFinal))}`, 105, yPos, { align: 'center' });
 
         // Informações do funcionário com espaçamento adequado
         yPos += 20;
@@ -654,7 +660,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Salvar PDF
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const nomeArquivo = `Ponto_${usuario.nome.replace(/\s+/g, '_')}_${formatarData(dataInicial)}_${formatarData(dataFinal)}_${timestamp}.pdf`;
+        const nomeArquivo = `Ponto_${usuario.nome.replace(/\s+/g, '_')}_${formatarData(new Date(dataInicial))}_${formatarData(new Date(dataFinal))}_${timestamp}.pdf`;
         doc.save(nomeArquivo);
 
         // Remover indicador de carregamento
@@ -671,15 +677,13 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Função para remover um registro (movida para o escopo global)
-  window.removerRegistro = async function(index) {
+  window.removerRegistro = async function(id) {
     const token = localStorage.getItem("token");
     if (!token) {
       alert("Nenhum usuário logado! Faça login primeiro.");
       window.location.href = "/pages/login.html";
       return;
     }
-
-    const id = registros[index].id; // Obtém o ID do registro a ser removido
 
     try {
       const response = await fetch(`http://localhost:3000/registro/${id}`, {
@@ -704,10 +708,16 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Função para editar um campo específico
-  window.editarCampo = function (index, campo) {
-    registroEditando = registros[index].id;
+  window.editarCampo = function (id, campo) {
+    registroEditando = id;
     campoEditando = campo;
-    const registro = registros[index];
+    
+    // Encontra o registro pelo ID
+    const registro = registros.find(r => r.id === id);
+    if (!registro) {
+      alert("Registro não encontrado!");
+      return;
+    }
 
     // Exibe o formulário de edição
     formEdicao.style.display = "block";
@@ -945,22 +955,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Função para editar data
-  window.editarData = function (index) {
-    registroEditando = registros[index].id;
-    campoEditando = "data"; // Define o campo sendo editado
-    const registro = registros[index];
-
-    // Exibe o formulário de edição
-    formEdicao.style.display = "block";
-    
-    // Mostra apenas o campo de data
-    document.getElementById("editar-data-group").style.display = "block";
-    document.getElementById("editar-tipo-ponto-group").style.display = "none";
-    document.getElementById("editar-hora-group").style.display = "none";
-    document.getElementById("editar-foto-group").style.display = "none";
-
-    // Preenche o formulário com a data atual
-    document.getElementById("editar-data").value = ajustarData(registro.data);
+  window.editarData = function (id) {
+    editarCampo(id, "data");
   };
 
   // Função para filtrar registros por data
@@ -968,21 +964,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!dataInicial || !dataFinal) {
       return registros;
     }
-    
-    // Converte as datas para objetos Date
+
     const dataInicialObj = new Date(dataInicial);
     const dataFinalObj = new Date(dataFinal);
     
-    // Ajusta as datas para considerar o dia inteiro
-    dataInicialObj.setHours(0, 0, 0, 0);
+    // Ajusta a data final para incluir o dia inteiro
     dataFinalObj.setHours(23, 59, 59, 999);
-    
-    // Filtra os registros
+
     return registros.filter(registro => {
-      // Converte a data do registro para objeto Date
       const dataRegistro = new Date(registro.data);
-      
-      // Compara as datas
       return dataRegistro >= dataInicialObj && dataRegistro <= dataFinalObj;
     });
   }
@@ -997,39 +987,74 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Ordena os registros por data e hora
-    registrosFiltrados.sort((a, b) => {
-      const dataA = new Date(a.data);
-      const dataB = new Date(b.data);
-      if (dataA.getTime() === dataB.getTime()) {
-        return a.hora.localeCompare(b.hora);
+    // Agrupa registros por data
+    const registrosPorData = {};
+    registrosFiltrados.forEach(registro => {
+      const data = new Date(registro.data).toISOString().split('T')[0];
+      if (!registrosPorData[data]) {
+        registrosPorData[data] = [];
       }
-      return dataB.getTime() - dataA.getTime();
+      registrosPorData[data].push(registro);
     });
 
-    registrosFiltrados.forEach((registro, index) => {
+    // Ordena as datas em ordem decrescente
+    const datasOrdenadas = Object.keys(registrosPorData).sort((a, b) => new Date(b) - new Date(a));
+
+    // Para cada data, ordena os registros na sequência correta
+    datasOrdenadas.forEach(data => {
+      const registrosDia = registrosPorData[data];
+      
+      // Define a ordem correta dos tipos de registro
+      const ordemTipos = ['entrada', 'almoco', 'retorno', 'saida'];
+      
+      // Ordena os registros do dia na sequência correta
+      registrosDia.sort((a, b) => {
+        const indexA = ordemTipos.indexOf(a.tipoPonto);
+        const indexB = ordemTipos.indexOf(b.tipoPonto);
+        return indexA - indexB;
+      });
+
+      // Adiciona um cabeçalho para o dia da semana
+      const dataObj = new Date(data);
+      const diaSemana = dataObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+      const trCabecalho = document.createElement("tr");
+      trCabecalho.innerHTML = `
+        <td colspan="5" style="background-color: #f0f0f0; font-weight: bold; text-align: center;">
+          ${diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)} - ${formatarData(dataObj)}
+        </td>
+      `;
+      tbody.appendChild(trCabecalho);
+
+      // Adiciona os registros do dia na tabela
+      registrosDia.forEach((registro) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${formatarDataLocal(registro.data)}</td>
-            <td>${registro.tipoPonto}</td>
-            <td>${registro.hora}</td>
-            <td>
-                ${registro.foto && registro.foto.length > 0
-                    ? registro.foto.map((foto, i) => `
-                        <img src="${foto}" style="width: 50px;">
-                        <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
-                    `).join("")
-                    : "Nenhuma foto"}
-            </td>
-            <td>
-                <button onclick="editarCampo(${index}, 'data')">Editar Data</button>
-                <button onclick="editarCampo(${index}, 'tipoPonto')">Editar Tipo</button>
-                <button onclick="editarCampo(${index}, 'hora')">Editar Hora</button>
-                <button onclick="editarCampo(${index}, 'foto')">Editar Fotos</button>
-                <button onclick="removerRegistro(${index})">Remover</button>
-            </td>
+          <td>${formatarDataLocal(registro.data)}</td>
+          <td>${registro.tipoPonto}</td>
+          <td>${registro.hora}</td>
+          <td>
+            ${registro.foto && registro.foto.length > 0
+              ? registro.foto.map((foto, i) => `
+                <img src="${foto}" style="width: 50px;">
+                <a href="${foto}" class="link-baixar" download="foto_${registro.tipoPonto}_${i + 1}.jpg">Baixar</a>
+              `).join("")
+              : "Nenhuma foto"}
+          </td>
+          <td>
+            <button onclick="editarCampo('${registro.id}', 'data')">Editar Data</button>
+            <button onclick="editarCampo('${registro.id}', 'tipoPonto')">Editar Tipo</button>
+            <button onclick="editarCampo('${registro.id}', 'hora')">Editar Hora</button>
+            <button onclick="editarCampo('${registro.id}', 'foto')">Editar Fotos</button>
+            <button onclick="removerRegistro('${registro.id}')">Remover</button>
+          </td>
         `;
         tbody.appendChild(tr);
+      });
+
+      // Adiciona uma linha separadora após cada dia
+      const trSeparador = document.createElement("tr");
+      trSeparador.innerHTML = '<td colspan="5" style="border-bottom: 2px solid #ccc;"></td>';
+      tbody.appendChild(trSeparador);
     });
   }
 

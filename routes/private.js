@@ -26,28 +26,72 @@ router.get('/listar-usuarios', async (req, res) => {
 // Criar registro
 router.post("/registro", auth, async (req, res) => {
   try {
+    console.log("Recebendo requisição de registro:", req.body);
+    console.log("Usuário autenticado:", req.user);
+    
     const { data, tipoPonto, hora, foto } = req.body;
 
     // Validação
     if (!data || !tipoPonto || !hora) {
+      console.log("Dados incompletos:", { data, tipoPonto, hora });
       return res.status(400).json({ message: "Data, tipo e horário são obrigatórios" });
     }
+
+    // Validar formato da data
+    const dataObj = new Date(data);
+    if (isNaN(dataObj.getTime())) {
+      console.log("Data inválida:", data);
+      return res.status(400).json({ message: "Formato de data inválido" });
+    }
+
+    // Validar tipo de ponto
+    const tiposValidos = ['entrada', 'saida', 'almoco', 'retorno', 'intervalo_inicio', 'intervalo_fim'];
+    if (!tiposValidos.includes(tipoPonto)) {
+      console.log("Tipo de ponto inválido:", tipoPonto);
+      return res.status(400).json({ message: "Tipo de ponto inválido" });
+    }
+
+    // Validar formato da hora
+    const horaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!horaRegex.test(hora)) {
+      console.log("Formato de hora inválido:", hora);
+      return res.status(400).json({ message: "Formato de hora inválido (use HH:MM)" });
+    }
+
+    // Processar fotos
+    let fotosProcessadas = [];
+    if (foto) {
+      if (Array.isArray(foto)) {
+        fotosProcessadas = foto.filter(Boolean);
+      } else if (typeof foto === 'string') {
+        fotosProcessadas = [foto];
+      }
+    }
+
+    console.log("Criando registro com dados:", {
+      userId: req.user.id,
+      data: dataObj,
+      tipoPonto,
+      hora,
+      fotos: fotosProcessadas.length
+    });
 
     // Cria o registro
     const registro = await prisma.registro.create({
       data: {
         userId: req.user.id,
-        data: new Date(data),
+        data: dataObj,
         tipoPonto,
         hora,
-        foto: Array.isArray(foto) ? foto : [foto].filter(Boolean)
+        foto: fotosProcessadas
       }
     });
 
+    console.log("Registro criado com sucesso:", registro);
     res.status(201).json({ registro });
   } catch (err) {
     console.error("Erro ao criar registro:", err);
-    res.status(500).json({ message: "Erro no servidor" });
+    res.status(500).json({ message: "Erro no servidor", error: err.message });
   }
 });
 

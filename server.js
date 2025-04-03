@@ -16,11 +16,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Rotas públicas (não requerem autenticação)
 app.use('/', publicas);
 
-// Middleware de autenticação
-app.use(auth);
-
 // Rotas privadas (requerem autenticação)
-app.use('/', privat);
+// Aplicar o middleware de autenticação apenas nas rotas privadas
+app.use('/', auth, privat);
 
 // Inicialização do servidor
 app.listen(3000, () => console.log('**** Servidor Rodando na porta 3000 *****'));

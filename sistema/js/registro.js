@@ -6,6 +6,23 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
+  // Preencher o campo de nome com o nome do usuário logado
+  const usuarioStr = localStorage.getItem("usuario");
+  if (usuarioStr) {
+    try {
+      const usuario = JSON.parse(usuarioStr);
+      if (usuario && usuario.nome) {
+        document.getElementById("nome").value = usuario.nome;
+      }
+    } catch (error) {
+      console.error("Erro ao processar dados do usuário:", error);
+    }
+  }
+
+  // Preencher a data atual
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById("data").value = hoje;
+
   document
     .getElementById("ponto-form")
     .addEventListener("submit", async function (event) {
@@ -16,6 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const tipoPonto = document.getElementById("tipo-ponto").value.trim();
       const hora = document.getElementById("hora").value.trim();
       const foto = document.getElementById("foto").files;
+
+      console.log("Dados do formulário:", { nome, data, tipoPonto, hora, fotos: foto.length });
 
       if (!data || !tipoPonto || !hora || foto.length === 0) {
         alert("Preencha todos os campos e selecione ao menos uma foto!");
@@ -32,7 +51,14 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       try {
+        // Mostrar indicador de carregamento
+        const botao = document.getElementById("botao");
+        const textoOriginal = botao.textContent;
+        botao.textContent = "Registrando...";
+        botao.disabled = true;
+
         // Converte as fotos para base64
+        console.log("Convertendo fotos para base64...");
         const fotoBase64 = await Promise.all(
           Array.from(foto).map((file) => {
             return new Promise((resolve, reject) => {
@@ -43,13 +69,21 @@ document.addEventListener("DOMContentLoaded", function () {
             });
           })
         );
+        console.log("Fotos convertidas com sucesso");
 
+        // Verificar token novamente antes de enviar
+        const tokenAtual = localStorage.getItem("token");
+        if (!tokenAtual) {
+          throw new Error("Token não encontrado. Por favor, faça login novamente.");
+        }
+
+        console.log("Enviando dados para o backend...");
         // Envia os dados para o backend
         const response = await fetch("http://localhost:3000/registro", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "Authorization": `Bearer ${tokenAtual}`,
           },
           body: JSON.stringify({
             data,
@@ -59,16 +93,26 @@ document.addEventListener("DOMContentLoaded", function () {
           }),
         });
 
+        console.log("Resposta do servidor:", response.status);
+        
         if (response.ok) {
+          const data = await response.json();
+          console.log("Resposta completa:", data);
           alert("Ponto registrado com sucesso!");
           window.location.href = "/sistema/pages/ver-registros.html"; // Redireciona para a página de registros
         } else {
           const error = await response.json();
+          console.error("Erro na resposta:", error);
           alert(`Erro ao registrar ponto: ${error.message}`);
         }
       } catch (err) {
         console.error("Erro ao registrar ponto:", err);
-        alert("Erro no servidor. Tente novamente mais tarde.");
+        alert(`Erro ao registrar ponto: ${err.message}`);
+      } finally {
+        // Restaurar o botão
+        const botao = document.getElementById("botao");
+        botao.textContent = textoOriginal;
+        botao.disabled = false;
       }
     });
 
