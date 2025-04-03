@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Administração - Sistema de Registro de Ponto</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <div class="admin-info">
+                <i class="fas fa-user-shield"></i>
+                <span id="admin-name">Admin</span>
+            </div>
+            <button id="logout-btn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="nav-buttons">
+            <button id="btn-usuarios" class="nav-btn">
+                <i class="fas fa-users"></i> Gerenciar Usuários
+            </button>
+            <button id="btn-registros" class="nav-btn">
+                <i class="fas fa-clock"></i> Ver Registros
+            </button>
+        </div>
+
+        <!-- Painel de Usuários -->
+        <div id="panel-usuarios" class="panel-content">
+            <div class="search-container">
+                <input type="text" id="search-user" class="search-input" placeholder="Buscar usuário...">
+                <button id="btn-search" class="search-btn">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+
+            <table id="tabela-usuarios">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Último Acesso</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Painel de Registros -->
+        <div id="panel-registros" class="panel-content">
+            <div class="user-select">
+                <select id="select-user" class="form-input">
+                    <option value="">Selecione um usuário...</option>
+                    <!-- Preenchido via JavaScript -->
+                </select>
+            </div>
+
+            <div class="date-filters">
+                <input type="date" id="data-inicial" class="date-input">
+                <input type="date" id="data-final" class="date-input">
+                <button id="filtrar-datas" class="filter-btn">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+
+            <table id="tabela-registros">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Horário</th>
+                        <th>Fotos</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+
+            <div class="hours-summary">
+                <h3>Resumo de Horas</h3>
+                <div class="hours-grid">
+                    <div class="hours-item">
+                        <div class="hours-label">Horas Trabalhadas</div>
+                        <div id="horas-trabalhadas" class="hours-value">00:00</div>
+                    </div>
+                    <div class="hours-item">
+                        <div class="hours-label">Horas Extras</div>
+                        <div id="horas-extras" class="hours-value">00:00</div>
+                    </div>
+                    <div class="hours-item">
+                        <div class="hours-label">Horas Faltantes</div>
+                        <div id="horas-faltantes" class="hours-value">00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="gerar-pdf" class="action-btn btn-view">
+                <i class="fas fa-file-pdf"></i> Gerar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div id="form-edicao" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Registro</h2>
+                <button id="cancelar-edicao" class="close-modal">&times;</button>
+            </div>
+            <form id="editar-form">
+                <div class="form-group">
+                    <label for="editar-data" class="form-label">Data</label>
+                    <input type="date" id="editar-data" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="editar-tipo-ponto" class="form-label">Tipo de Ponto</label>
+                    <select id="editar-tipo-ponto" class="form-input" required>
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                        <option value="almoco">Almoço</option>
+                        <option value="retorno">Retorno</option>
+                        <option value="intervalo_inicio">Início Intervalo</option>
+                        <option value="intervalo_fim">Fim Intervalo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editar-hora" class="form-label">Horário</label>
+                    <input type="time" id="editar-hora" class="form-input" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelar-edicao" class="cancel-btn">Cancelar</button>
+                    <button type="submit" class="save-btn">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/admin-dashboard.js"></script>
+</body>
+
+</html> 

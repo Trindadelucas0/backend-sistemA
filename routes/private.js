@@ -5,20 +5,90 @@ import auth from "../middlewares/auth.js";
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Listar todos os usuários (apenas para admin)
-router.get('/listar-usuarios', async (req, res) => {
+// Middleware para verificar se é admin
+const isAdmin = async (req, res, next) => {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+    
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: "Acesso negado. Apenas administradores podem acessar este recurso." });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ message: "Erro ao verificar permissões" });
+  }
+};
+
+// Listar todos os usuários (apenas para admin)
+router.get('/usuarios', auth, isAdmin, async (req, res) => {
+  try {
+    console.log("Iniciando busca de usuários...");
+    console.log("ID do usuário autenticado:", req.user.id);
+    console.log("Status de admin:", req.user.isAdmin);
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
-        createdAt: true
+        isBlocked: true,
+        lastLogin: true,
+        isAdmin: true
       }
     });
+
+    console.log("Usuários encontrados:", users.length);
     res.status(200).json({ users });
   } catch (err) {
-    console.error("Erro ao listar usuários:", err);
+    console.error("Erro detalhado ao listar usuários:", err);
+    console.error("Stack trace:", err.stack);
+    res.status(500).json({ 
+      message: "Erro ao buscar usuários",
+      error: err.message 
+    });
+  }
+});
+
+// Bloquear/Desbloquear usuário
+router.put('/usuarios/:id/status', auth, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isBlocked } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isBlocked },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isBlocked: true
+      }
+    });
+
+    res.status(200).json({ 
+      message: `Usuário ${isBlocked ? 'bloqueado' : 'desbloqueado'} com sucesso`,
+      user 
+    });
+  } catch (err) {
+    console.error("Erro ao atualizar status do usuário:", err);
+    res.status(500).json({ message: "Erro no servidor" });
+  }
+});
+
+// Listar registros de um usuário específico (apenas para admin)
+router.get('/usuarios/:id/registros', auth, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const registros = await prisma.registro.findMany({
+      where: { userId: id },
+      orderBy: { data: 'desc' }
+    });
+    res.status(200).json({ registros });
+  } catch (err) {
+    console.error("Erro ao listar registros do usuário:", err);
     res.status(500).json({ message: "Erro no servidor" });
   }
 });

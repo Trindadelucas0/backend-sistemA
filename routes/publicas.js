@@ -62,14 +62,39 @@ router.post("/login", async (req, res) => {
       return res.status(404).json({ message: "Usuário não encontrado" });
     }
 
+    // Verifica se o usuário está bloqueado
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "Usuário bloqueado. Entre em contato com o administrador." });
+    }
+
     // Compara a senha fornecida com a senha armazenada no banco
     const validaSenha = await bcrypt.compare(userInfo.password, user.password);
     if (!validaSenha) {
       return res.status(401).json({ message: "Senha inválida" });
     }
 
+    // Verifica se é o primeiro usuário do sistema
+    const totalUsers = await prisma.user.count();
+    if (totalUsers === 1) {
+      // Torna o primeiro usuário admin
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { isAdmin: true }
+      });
+      user.isAdmin = true;
+    }
+
+    // Atualiza o último login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    });
+
     // Gera o token JWT
-    const token = jwt.sign({ id: user.id }, jwt_secret, { expiresIn: "1h" });
+    const token = jwt.sign({ 
+      id: user.id,
+      isAdmin: user.isAdmin 
+    }, jwt_secret, { expiresIn: "1h" });
 
     // Retorna o token e os dados do usuário
     res.status(200).json({ 
@@ -77,7 +102,8 @@ router.post("/login", async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        isAdmin: user.isAdmin
       }
     });
   } catch (err) {

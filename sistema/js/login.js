@@ -31,15 +31,22 @@ document.addEventListener("DOMContentLoaded", function () {
             id: data.user.id,
             nome: data.user.name,
             email: data.user.email,
+            isAdmin: data.user.isAdmin,
             matricula: data.user.id, // Usando o ID como matrícula temporariamente
-            cargo: "Funcionário", // Valor padrão
+            cargo: data.user.isAdmin ? "Administrador" : "Funcionário",
             departamento: "TI" // Valor padrão
           }));
           
           console.log("Dados do usuário salvos:", JSON.parse(localStorage.getItem("usuario"))); // Log para debug
           
           alert("Login realizado com sucesso!");
-          window.location.href = "registro-ponto.html";
+          
+          // Redireciona com base no tipo de usuário
+          if (data.user.isAdmin) {
+            window.location.href = "admin-dashboard.html";
+          } else {
+            window.location.href = "registro-ponto.html";
+          }
         } else {
           const error = await response.json();
           alert(`Erro no login: ${error.message}`);
