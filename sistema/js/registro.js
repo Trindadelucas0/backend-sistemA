@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         console.log("Enviando dados para o backend...");
         // Envia os dados para o backend
-        const response = await fetch("apiUrl/registro", {
+        const response = await fetch(`${apiUrl}/registro`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

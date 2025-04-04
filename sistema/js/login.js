@@ -1,4 +1,3 @@
-console.log(apiUrl);
 document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("login-form")
@@ -15,7 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       try {
         // Envia os dados para a API de login
-        const response = await fetch("apiUrl/login", {
+        const response = await fetch(`${apiUrl}/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

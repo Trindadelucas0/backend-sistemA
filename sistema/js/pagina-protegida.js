@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const response = await fetch("apiUrl/listar-usuarios", {
+    const response = await fetch(`${apiUrl}/listar-usuarios`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

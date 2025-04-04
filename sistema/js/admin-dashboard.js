@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Função para buscar usuários
   async function buscarUsuarios() {
     try {
-      const response = await fetch("apiUrl/usuarios", {
+      const response = await fetch(`${apiUrl}/usuarios`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -200,17 +200,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Função para alterar o status de um usuário (bloquear/desbloquear)
   async function alterarStatusUsuario(userId, isBlocked) {
     try {
-      const response = await fetch(
-        `apiUrl/usuarios/${userId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ isBlocked }),
-        }
-      );
+      const response = await fetch(`${apiUrl}/usuarios/${userId}/status`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isBlocked }),
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -232,16 +229,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // Função para buscar registros de um usuário específico
   async function buscarRegistrosUsuario(userId) {
     try {
-      const response = await fetch(
-        `apiUrl/usuarios/${userId}/registros`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${apiUrl}/usuarios/${userId}/registros`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Erro ao buscar registros: ${response.status}`);
@@ -418,16 +412,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // Função para excluir um registro
   async function excluirRegistro(registroId) {
     try {
-      const response = await fetch(
-        `apiUrl/registro/${registroId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${apiUrl}/registro/${registroId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Erro ao excluir registro: ${response.status}`);
@@ -689,7 +680,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const response = await fetch(
-        `apiUrl/registro/${registroEditando.id}`,
+        `${apiUrl}/registro/${registroEditando.id}`,
         {
           method: "PUT",
           headers: {

@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log("Iniciando busca de registros...");
       console.log("Token:", token.substring(0, 20) + "...");
 
-      const response = await fetch("apiUrl/registros", {
+      const response = await fetch(`${apiUrl}/registros`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -767,7 +767,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     try {
-      const response = await fetch(`apiUrl/registro/${id}`, {
+      const response = await fetch(`${apiUrl}/registro/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -942,7 +942,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       console.log("Enviando atualização:", dadosAtualizados);
-      const response = await fetch(`apiUrl/registro/${registroEditando}`, {
+      const response = await fetch(`${apiUrl}/registro/${registroEditando}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

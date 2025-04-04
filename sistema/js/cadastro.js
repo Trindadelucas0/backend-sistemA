@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       try {
         // Envia os dados para a API de cadastro
-        const response = await fetch("apiUrl/cadastro", {
+        const response = await fetch(`${apiUrl}/cadastro`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
