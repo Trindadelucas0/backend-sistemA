@@ -5,28 +5,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/sistema/css/estilo-login.css">
-    <title>Login</title>
+    <link rel="stylesheet" href="/sistema/css/notifications.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Login - PontoInteligente</title>
 </head>
 
 <body>
     <div class="container">
-        <h2>Login</h2>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" placeholder="Digite seu e-mail" required>
-            </div>
-            <div class="form-group">
-                <label for="senha">Senha:</label>
-                <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
-            </div>
-            <button type="submit" id="botao">Entrar</button>
-        </form>
-        <div class="footer">
-            <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+        <div class="login-box">
+            <h2><i class="fas fa-user-circle"></i> Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha:</label>
+                    <input type="password" id="senha" name="senha" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+            <p class="register-link">
+                Não tem uma conta? <a href="/sistema/pages/cadastro.html">Cadastre-se</a>
+            </p>
         </div>
     </div>
-    <script src="/sistema/js/login.js"></script>
+
+    <script src="/sistema/js/notifications.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('login-form');
+            const emailInput = document.getElementById('email');
+            const senhaInput = document.getElementById('senha');
+
+            // Notificação de boas-vindas
+            window.notificationSystem.show(
+                'info',
+                'Bem-vindo de volta!',
+                'Faça login para acessar seu painel'
+            );
+
+            // Notificação ao focar no campo de email
+            emailInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Use o email cadastrado na sua conta'
+                );
+            });
+
+            // Notificação ao focar no campo de senha
+            senhaInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Digite sua senha com segurança'
+                );
+            });
+
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const email = emailInput.value.trim();
+                const senha = senhaInput.value.trim();
+
+                if (!email || !senha) {
+                    window.notificationSystem.show(
+                        'warning',
+                        'Atenção',
+                        'Preencha todos os campos'
+                    );
+                    return;
+                }
+
+                try {
+                    const response = await fetch('http://localhost:3000/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, senha })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+
+                        window.notificationSystem.show(
+                            'success',
+                            'Sucesso!',
+                            'Login realizado com sucesso'
+                        );
+
+                        setTimeout(() => {
+                            window.location.href = '/sistema/pages/registro-ponto.html';
+                        }, 1500);
+                    } else {
+                        const error = await response.json();
+                        window.notificationSystem.show(
+                            'error',
+                            'Erro',
+                            error.message || 'Erro ao fazer login'
+                        );
+                    }
+                } catch (error) {
+                    window.notificationSystem.show(
+                        'error',
+                        'Erro',
+                        'Erro ao conectar com o servidor'
+                    );
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

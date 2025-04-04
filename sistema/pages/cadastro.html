@@ -5,32 +5,155 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/sistema/css/estilo-cadastro.css">
-    <title>Cadastro</title>
+    <link rel="stylesheet" href="/sistema/css/notifications.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Cadastro - PontoInteligente</title>
 </head>
 
 <body>
     <div class="container">
-        <h2>Cadastro</h2>
-        <form id="cadastro-form">
-            <div class="form-group">
-                <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" name="nome" placeholder="Digite seu nome completo" required>
-            </div>
-            <div class="form-group">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" placeholder="Digite seu e-mail" required>
-            </div>
-            <div class="form-group">
-                <label for="senha">Senha:</label>
-                <input type="password" id="senha" name="senha" placeholder="Crie uma senha" required>
-            </div>
-            <button type="submit" id="botao-cadastro">Cadastrar</button>
-        </form>
-        <div class="footer">
-            <p>Já tem uma conta? <a href="login.html">Faça login</a></p>
+        <div class="cadastro-box">
+            <h2><i class="fas fa-user-plus"></i> Criar Conta</h2>
+            <form id="cadastro-form">
+                <div class="form-group">
+                    <label for="nome">Nome Completo:</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha:</label>
+                    <input type="password" id="senha" name="senha" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmar-senha">Confirmar Senha:</label>
+                    <input type="password" id="confirmar-senha" name="confirmar-senha" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <p class="login-link">
+                Já tem uma conta? <a href="/sistema/pages/login.html">Faça login</a>
+            </p>
         </div>
     </div>
-    <script src="/sistema/js/cadastro.js"></script>
+
+    <script src="/sistema/js/notifications.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cadastroForm = document.getElementById('cadastro-form');
+            const nomeInput = document.getElementById('nome');
+            const emailInput = document.getElementById('email');
+            const senhaInput = document.getElementById('senha');
+            const confirmarSenhaInput = document.getElementById('confirmar-senha');
+
+            // Notificação de boas-vindas
+            window.notificationSystem.show(
+                'info',
+                'Bem-vindo!',
+                'Crie sua conta para começar a usar o sistema'
+            );
+
+            // Notificação ao focar no campo de nome
+            nomeInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Digite seu nome completo como está no documento'
+                );
+            });
+
+            // Notificação ao focar no campo de email
+            emailInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Use um email válido para receber notificações'
+                );
+            });
+
+            // Notificação ao focar no campo de senha
+            senhaInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Use uma senha forte com letras, números e símbolos'
+                );
+            });
+
+            // Notificação ao focar no campo de confirmar senha
+            confirmarSenhaInput.addEventListener('focus', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Dica',
+                    'Digite a mesma senha do campo anterior'
+                );
+            });
+
+            cadastroForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const nome = nomeInput.value.trim();
+                const email = emailInput.value.trim();
+                const senha = senhaInput.value.trim();
+                const confirmarSenha = confirmarSenhaInput.value.trim();
+
+                if (!nome || !email || !senha || !confirmarSenha) {
+                    window.notificationSystem.show(
+                        'warning',
+                        'Atenção',
+                        'Preencha todos os campos'
+                    );
+                    return;
+                }
+
+                if (senha !== confirmarSenha) {
+                    window.notificationSystem.show(
+                        'error',
+                        'Erro',
+                        'As senhas não coincidem'
+                    );
+                    return;
+                }
+
+                try {
+                    const response = await fetch('http://localhost:3000/cadastro', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ nome, email, senha })
+                    });
+
+                    if (response.ok) {
+                        window.notificationSystem.show(
+                            'success',
+                            'Sucesso!',
+                            'Conta criada com sucesso! Redirecionando para o login...'
+                        );
+
+                        setTimeout(() => {
+                            window.location.href = '/sistema/pages/login.html';
+                        }, 2000);
+                    } else {
+                        const error = await response.json();
+                        window.notificationSystem.show(
+                            'error',
+                            'Erro',
+                            error.message || 'Erro ao criar conta'
+                        );
+                    }
+                } catch (error) {
+                    window.notificationSystem.show(
+                        'error',
+                        'Erro',
+                        'Erro ao conectar com o servidor'
+                    );
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

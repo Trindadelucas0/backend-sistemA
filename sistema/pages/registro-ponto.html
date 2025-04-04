@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/sistema/css/estilo-registro.css">
+    <link rel="stylesheet" href="/sistema/css/notifications.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <title>Registro de Ponto</title>
 </head>
 
@@ -48,13 +50,22 @@
             <button type="submit" id="botao">Registrar Ponto</button>
         </form>
         <button id="ver-registros-btn">Ver Registros</button>
-
     </div>
 
+    <!-- Modal de Confirmação -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Confirmar Registro</h3>
+            <p id="confirm-message"></p>
+            <div class="modal-buttons">
+                <button id="confirm-yes" class="btn-primary">Confirmar</button>
+                <button id="confirm-no" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
-
+    <script src="/sistema/js/notifications.js"></script>
     <script src="/sistema/js/registro.js"></script>
-
 </body>
 
 </html>

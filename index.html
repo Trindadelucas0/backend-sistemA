@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/sistema/css/index.css">
+    <link rel="stylesheet" href="/sistema/css/notifications.css">
     <link rel="icon" href="/sistema/assets/favicon.ico">
 </head>
 <body>
@@ -17,11 +18,11 @@
                 <h1>📊 Controle de Ponto Inteligente</h1>
                 <p>Automatize seus registros, evite erros e tenha total controle do seu tempo! Uma solução completa para gestão de jornada de trabalho.</p>
                 <div class="header-buttons">
-                    <a href="/sistema/pages/login.html" class="header-btn header-btn-primary">
+                    <a href="/sistema/pages/login.html" class="header-btn header-btn-primary" id="btn-login">
                         <i class="fas fa-sign-in-alt"></i>
                         Entrar
                     </a>
-                    <a href="/sistema/pages/cadastro.html" class="header-btn header-btn-secondary">
+                    <a href="/sistema/pages/cadastro.html" class="header-btn header-btn-secondary" id="btn-cadastro">
                         <i class="fas fa-user-plus"></i>
                         Criar Conta
                     </a>
@@ -62,7 +63,7 @@
         <div class="container">
             <h2>🔹 Menos de R$1 por dia para ter controle total! 🔹</h2>
             <p>💰 Apenas <strong>R$19,90/mês</strong>, para ter controle total do seu ponto! Invista na sua organização e evite dores de cabeça. Sem taxas ocultas ou surpresas.</p>
-            <a href="/sistema/pages/cadastro.html" class="btn">
+            <a href="/sistema/pages/cadastro.html" class="btn" id="btn-comecar">
                 <i class="fas fa-credit-card"></i>
                 Começar Agora
             </a>
@@ -123,5 +124,61 @@
             </div>
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script src="/sistema/js/notifications.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exemplo de uso das notificações nos botões
+            const btnLogin = document.getElementById('btn-login');
+            const btnCadastro = document.getElementById('btn-cadastro');
+            const btnComecar = document.getElementById('btn-comecar');
+
+            // Notificação ao passar o mouse sobre o botão de login
+            btnLogin.addEventListener('mouseenter', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Acesso Rápido',
+                    'Clique para acessar sua conta'
+                );
+            });
+
+            // Notificação ao passar o mouse sobre o botão de cadastro
+            btnCadastro.addEventListener('mouseenter', function() {
+                window.notificationSystem.show(
+                    'info',
+                    'Novo Usuário',
+                    'Crie sua conta gratuitamente'
+                );
+            });
+
+            // Notificação ao passar o mouse sobre o botão começar
+            btnComecar.addEventListener('mouseenter', function() {
+                window.notificationSystem.show(
+                    'success',
+                    'Ótima Escolha!',
+                    'Comece agora e tenha controle total do seu ponto'
+                );
+            });
+
+            // Exemplo de notificação de boas-vindas
+            setTimeout(() => {
+                window.notificationSystem.show(
+                    'success',
+                    'Bem-vindo!',
+                    'Conheça nosso sistema de controle de ponto inteligente'
+                );
+            }, 1000);
+
+            // Exemplo de notificação de recursos
+            setTimeout(() => {
+                window.notificationSystem.show(
+                    'info',
+                    'Recursos Disponíveis',
+                    'Experimente nossos recursos exclusivos de registro e relatórios'
+                );
+            }, 3000);
+        });
+    </script>
 </body>
 </html>

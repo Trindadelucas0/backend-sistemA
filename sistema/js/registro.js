@@ -1,8 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
   const token = localStorage.getItem("token");
   if (!token) {
-    alert("Nenhum usuário logado! Faça login primeiro.");
-    window.location.href = "/sistema/pages/login.html";
+    window.notificationSystem.show('error', 'Erro de Autenticação', 'Nenhum usuário logado! Faça login primeiro.');
+    setTimeout(() => {
+      window.location.href = "/sistema/pages/login.html";
+    }, 2000);
     return;
   }
 
@@ -16,12 +18,36 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     } catch (error) {
       console.error("Erro ao processar dados do usuário:", error);
+      window.notificationSystem.show('error', 'Erro', 'Erro ao carregar dados do usuário');
     }
   }
 
   // Preencher a data atual
   const hoje = new Date().toISOString().split('T')[0];
   document.getElementById("data").value = hoje;
+
+  // Função para mostrar o modal de confirmação
+  function showConfirmModal(message) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirm-modal');
+      const messageEl = document.getElementById('confirm-message');
+      const yesBtn = document.getElementById('confirm-yes');
+      const noBtn = document.getElementById('confirm-no');
+
+      messageEl.textContent = message;
+      modal.style.display = 'block';
+
+      yesBtn.onclick = () => {
+        modal.style.display = 'none';
+        resolve(true);
+      };
+
+      noBtn.onclick = () => {
+        modal.style.display = 'none';
+        resolve(false);
+      };
+    });
+  }
 
   document
     .getElementById("ponto-form")
@@ -34,19 +60,20 @@ document.addEventListener("DOMContentLoaded", function () {
       const hora = document.getElementById("hora").value.trim();
       const foto = document.getElementById("foto").files;
 
-      console.log("Dados do formulário:", { nome, data, tipoPonto, hora, fotos: foto.length });
-
       if (!data || !tipoPonto || !hora || foto.length === 0) {
-        alert("Preencha todos os campos e selecione ao menos uma foto!");
+        window.notificationSystem.show(
+          'warning',
+          'Campos Obrigatórios',
+          'Preencha todos os campos e selecione ao menos uma foto!'
+        );
         return;
       }
 
-      const confirmar = confirm(`${nome} Deseja prosseguir com os dados? 
-            Data: ${data}
-            Tipo de Ponto: ${tipoPonto}
-            Horário: ${hora}`);
-      if (!confirmar) {
-        alert(`REGISTRO CANCELADO! TENTE NOVAMENTE!`);
+      const confirmMessage = `${nome}, confirme os dados:\nData: ${data}\nTipo de Ponto: ${tipoPonto}\nHorário: ${hora}`;
+      const confirmed = await showConfirmModal(confirmMessage);
+
+      if (!confirmed) {
+        window.notificationSystem.show('info', 'Cancelado', 'Registro cancelado pelo usuário');
         return;
       }
 
@@ -58,7 +85,6 @@ document.addEventListener("DOMContentLoaded", function () {
         botao.disabled = true;
 
         // Converte as fotos para base64
-        console.log("Convertendo fotos para base64...");
         const fotoBase64 = await Promise.all(
           Array.from(foto).map((file) => {
             return new Promise((resolve, reject) => {
@@ -69,7 +95,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
           })
         );
-        console.log("Fotos convertidas com sucesso");
 
         // Verificar token novamente antes de enviar
         const tokenAtual = localStorage.getItem("token");
@@ -77,7 +102,6 @@ document.addEventListener("DOMContentLoaded", function () {
           throw new Error("Token não encontrado. Por favor, faça login novamente.");
         }
 
-        console.log("Enviando dados para o backend...");
         // Envia os dados para o backend
         const response = await fetch("http://localhost:3000/registro", {
           method: "POST",
@@ -93,21 +117,36 @@ document.addEventListener("DOMContentLoaded", function () {
           }),
         });
 
-        console.log("Resposta do servidor:", response.status);
-        
         if (response.ok) {
           const data = await response.json();
-          console.log("Resposta completa:", data);
-          alert("Ponto registrado com sucesso!");
-          window.location.href = "/sistema/pages/ver-registros.html"; // Redireciona para a página de registros
+          window.notificationSystem.show(
+            'success',
+            'Sucesso!',
+            'Ponto registrado com sucesso!'
+          );
+          
+          // Verificar pontos pendentes após o registro
+          window.pendingPointsReminder.checkPendingPoints();
+          
+          // Redirecionar após um breve delay
+          setTimeout(() => {
+            window.location.href = "/sistema/pages/ver-registros.html";
+          }, 1500);
         } else {
           const error = await response.json();
-          console.error("Erro na resposta:", error);
-          alert(`Erro ao registrar ponto: ${error.message}`);
+          window.notificationSystem.show(
+            'error',
+            'Erro',
+            `Erro ao registrar ponto: ${error.message}`
+          );
         }
       } catch (err) {
         console.error("Erro ao registrar ponto:", err);
-        alert(`Erro ao registrar ponto: ${err.message}`);
+        window.notificationSystem.show(
+          'error',
+          'Erro',
+          `Erro ao registrar ponto: ${err.message}`
+        );
       } finally {
         // Restaurar o botão
         const botao = document.getElementById("botao");
@@ -120,6 +159,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("ver-registros-btn")
     .addEventListener("click", function () {
-      window.location.href = "/sistema/pages/ver-registros.html"; // Vai para a página de visualização dos registros
+      window.location.href = "/sistema/pages/ver-registros.html";
     });
 });

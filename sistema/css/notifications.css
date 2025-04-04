@@ -1,0 +1,189 @@
+/* Sistema de Notificações */
+.notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+}
+
+.notification {
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+    max-width: 100%;
+}
+
+.notification i {
+    font-size: 1.2em;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+/* Tipos de Notificação */
+.notification-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.notification-error {
+    background-color: #f44336;
+    color: white;
+}
+
+.notification-warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+.notification-info {
+    background-color: #2196F3;
+    color: white;
+}
+
+/* Animações */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.notification.fade-out {
+    animation: fadeOut 0.5s ease-out forwards;
+}
+
+/* Lembretes de Pontos Pendentes */
+.pending-points-banner {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #ff9800;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: pulse 2s infinite;
+    z-index: 9999;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Manual do Usuário Rápido */
+.quick-manual {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+}
+
+.quick-manual-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s;
+}
+
+.quick-manual-button:hover {
+    transform: scale(1.1);
+}
+
+.quick-manual-content {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 300px;
+    display: none;
+}
+
+.quick-manual-content.show {
+    display: block;
+    animation: slideIn 0.3s ease-out;
+}
+
+.quick-manual-content h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.quick-manual-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.quick-manual-content li {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .quick-manual-content {
+        background-color: #333;
+        color: white;
+    }
+
+    .quick-manual-content h3 {
+        color: white;
+    }
+} 
