@@ -1,3 +1,4 @@
+console.log(apiUrl);
 document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("login-form")
@@ -24,23 +25,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (response.ok) {
           const data = await response.json();
-          
+
           // Salvar token e dados do usuário
           localStorage.setItem("token", data.token);
-          localStorage.setItem("usuario", JSON.stringify({
-            id: data.user.id,
-            nome: data.user.name,
-            email: data.user.email,
-            isAdmin: data.user.isAdmin,
-            matricula: data.user.id, // Usando o ID como matrícula temporariamente
-            cargo: data.user.isAdmin ? "Administrador" : "Funcionário",
-            departamento: "TI" // Valor padrão
-          }));
-          
-          console.log("Dados do usuário salvos:", JSON.parse(localStorage.getItem("usuario"))); // Log para debug
-          
+          localStorage.setItem(
+            "usuario",
+            JSON.stringify({
+              id: data.user.id,
+              nome: data.user.name,
+              email: data.user.email,
+              isAdmin: data.user.isAdmin,
+              matricula: data.user.id, // Usando o ID como matrícula temporariamente
+              cargo: data.user.isAdmin ? "Administrador" : "Funcionário",
+              departamento: "TI", // Valor padrão
+            })
+          );
+
+          console.log(
+            "Dados do usuário salvos:",
+            JSON.parse(localStorage.getItem("usuario"))
+          ); // Log para debug
+
           alert("Login realizado com sucesso!");
-          
+
           // Redireciona com base no tipo de usuário
           if (data.user.isAdmin) {
             window.location.href = "admin-dashboard.html";
