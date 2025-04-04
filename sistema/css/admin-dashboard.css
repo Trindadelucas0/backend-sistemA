@@ -2,6 +2,7 @@
 :root {
     --primary-color: #0099ff;
     --secondary-color: #0055ff;
+    --black:#0000;
     --gradient: linear-gradient(130deg, #131313, #1c1c1c);
     --gradient-primary: linear-gradient(45deg, #0099ff, #0055ff);
     --gradient-dark: linear-gradient(130deg, #0a0a0a, #131313);
@@ -310,8 +311,6 @@ tr:hover {
     padding: 1rem 1.5rem;
     border: 1px solid var(--glass-border);
     border-radius: 25px;
-    background: var(--glass-bg);
-    color: var(--text-color);
     font-size: 1rem;
     transition: var(--transition);
 }
