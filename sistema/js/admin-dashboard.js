@@ -1,5 +1,3 @@
-import apiUrl from "./api";
-
 document.addEventListener("DOMContentLoaded", function () {
   // Verificar token e usuário
   const token = localStorage.getItem("token");
