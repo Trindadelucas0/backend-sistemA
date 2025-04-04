@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Preencher a data atual
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = new Date().toISOString().split("T")[0];
   document.getElementById("data").value = hoje;
 
   document
@@ -34,7 +34,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const hora = document.getElementById("hora").value.trim();
       const foto = document.getElementById("foto").files;
 
-      console.log("Dados do formulário:", { nome, data, tipoPonto, hora, fotos: foto.length });
+      console.log("Dados do formulário:", {
+        nome,
+        data,
+        tipoPonto,
+        hora,
+        fotos: foto.length,
+      });
 
       if (!data || !tipoPonto || !hora || foto.length === 0) {
         alert("Preencha todos os campos e selecione ao menos uma foto!");
@@ -74,16 +80,18 @@ document.addEventListener("DOMContentLoaded", function () {
         // Verificar token novamente antes de enviar
         const tokenAtual = localStorage.getItem("token");
         if (!tokenAtual) {
-          throw new Error("Token não encontrado. Por favor, faça login novamente.");
+          throw new Error(
+            "Token não encontrado. Por favor, faça login novamente."
+          );
         }
 
         console.log("Enviando dados para o backend...");
         // Envia os dados para o backend
-        const response = await fetch("http://localhost:3000/registro", {
+        const response = await fetch("apiUrl/registro", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${tokenAtual}`,
+            Authorization: `Bearer ${tokenAtual}`,
           },
           body: JSON.stringify({
             data,
@@ -94,7 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         console.log("Resposta do servidor:", response.status);
-        
+
         if (response.ok) {
           const data = await response.json();
           console.log("Resposta completa:", data);

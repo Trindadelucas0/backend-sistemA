@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       try {
         // Envia os dados para a API de login
-        const response = await fetch("http://localhost:3000/login", {
+        const response = await fetch("apiUrl/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

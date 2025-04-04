@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Função para buscar usuários
   async function buscarUsuarios() {
     try {
-      const response = await fetch("http://localhost:3000/usuarios", {
+      const response = await fetch("apiUrl/usuarios", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -201,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function alterarStatusUsuario(userId, isBlocked) {
     try {
       const response = await fetch(
-        `http://localhost:3000/usuarios/${userId}/status`,
+        `apiUrl/usuarios/${userId}/status`,
         {
           method: "PUT",
           headers: {
@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function buscarRegistrosUsuario(userId) {
     try {
       const response = await fetch(
-        `http://localhost:3000/usuarios/${userId}/registros`,
+        `apiUrl/usuarios/${userId}/registros`,
         {
           method: "GET",
           headers: {
@@ -419,7 +419,7 @@ document.addEventListener("DOMContentLoaded", function () {
   async function excluirRegistro(registroId) {
     try {
       const response = await fetch(
-        `http://localhost:3000/registro/${registroId}`,
+        `apiUrl/registro/${registroId}`,
         {
           method: "DELETE",
           headers: {
@@ -689,7 +689,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/registro/${registroEditando.id}`,
+        `apiUrl/registro/${registroEditando.id}`,
         {
           method: "PUT",
           headers: {
