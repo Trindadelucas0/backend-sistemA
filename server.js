@@ -4,12 +4,14 @@
  * e definir as rotas da aplicação.
  */
 
-import express from 'express';
-import cors from 'cors';
-import publicas from './routes/publicas.js';
-import privat from './routes/private.js';
-import auth from './middlewares/auth.js';
+import express from "express";
+import cors from "cors";
+import { config } from "dotenv";
+import publicas from "./routes/publicas.js";
+import privat from "./routes/private.js";
+import auth from "./middlewares/auth.js";
 
+config();
 // Inicialização do aplicativo Express
 const app = express();
 
@@ -18,19 +20,21 @@ app.use(cors());
 
 // Configuração para processar JSON e dados codificados em URL
 // Limite de 10MB para evitar sobrecarga do servidor
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Rotas públicas (não requerem autenticação)
 // Inclui endpoints como login e cadastro
-app.use('/', publicas);
+app.use("/", publicas);
 
 // Rotas privadas (requerem autenticação)
 // O middleware 'auth' verifica o token JWT antes de permitir o acesso
-app.use('/', auth, privat);
+app.use("/", auth, privat);
 
 // Inicialização do servidor na porta 3000
-app.listen(3000, () => console.log('**** Servidor Rodando na porta 3000 *****'));
+app.listen(3000, () =>
+  console.log("**** Servidor Rodando na porta 3000 *****")
+);
 
 // Nota: As credenciais do banco de dados devem ser mantidas no arquivo .env
 // e nunca devem ser commitadas no repositório
