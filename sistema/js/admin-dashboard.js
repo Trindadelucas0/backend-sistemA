@@ -91,11 +91,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Função para formatar data no formato brasileiro
   function formatarData(data) {
-    return data.toLocaleDateString("pt-BR", {
+    const dataObj = new Date(data);
+    // Ajusta o fuso horário para o Brasil
+    dataObj.setHours(dataObj.getHours() + 3); // Ajusta para GMT-3 (Brasil)
+    return dataObj.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
+  }
+
+  // Função para formatar a data no formato local
+  function formatarDataLocal(data) {
+    const dataObj = new Date(data);
+    // Ajusta o fuso horário para o Brasil
+    dataObj.setHours(dataObj.getHours() + 3); // Ajusta para GMT-3 (Brasil)
+    return dataObj.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "America/Sao_Paulo",
+    });
+  }
+
+  // Função para ajustar a data no formato ISO
+  function ajustarData(data) {
+    const dataObj = new Date(data);
+    // Ajusta o fuso horário para o Brasil
+    dataObj.setHours(dataObj.getHours() + 3); // Ajusta para GMT-3 (Brasil)
+    return dataObj.toISOString().split("T")[0];
   }
 
   // Função para alternar entre painéis
@@ -321,8 +346,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const dataInicialObj = new Date(dataInicial);
     const dataFinalObj = new Date(dataFinal);
 
-    // Ajustar para considerar o dia inteiro
-    dataInicialObj.setHours(0, 0, 0, 0);
+    // Ajusta a data final para incluir o dia inteiro
     dataFinalObj.setHours(23, 59, 59, 999);
 
     return registros.filter((registro) => {
@@ -338,63 +362,182 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (registrosFiltrados.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5" class="no-records">Nenhum registro encontrado para o período selecionado.</td>`;
+      tr.innerHTML = `
+        <td colspan="5" style="text-align: center; padding: 20px; font-size: 16px; color: #666;">
+          Nenhum registro encontrado para o período selecionado.
+        </td>`;
       tbody.appendChild(tr);
       return;
     }
 
+    // Agrupa registros por data
+    const registrosPorData = {};
     registrosFiltrados.forEach((registro) => {
-      const tr = document.createElement("tr");
-
-      // Formatar a data
-      const data = new Date(registro.data);
-      const dataFormatada = data.toLocaleDateString("pt-BR");
-
-      // Formatar o tipo de ponto
-      let tipoPontoFormatado = registro.tipoPonto;
-      switch (registro.tipoPonto) {
-        case "entrada":
-          tipoPontoFormatado = "Entrada";
-          break;
-        case "saida":
-          tipoPontoFormatado = "Saída";
-          break;
-        case "almoco":
-          tipoPontoFormatado = "Almoço";
-          break;
-        case "retorno":
-          tipoPontoFormatado = "Retorno";
-          break;
-        case "intervalo_inicio":
-          tipoPontoFormatado = "Início Intervalo";
-          break;
-        case "intervalo_fim":
-          tipoPontoFormatado = "Fim Intervalo";
-          break;
+      const data = new Date(registro.data).toISOString().split("T")[0];
+      if (!registrosPorData[data]) {
+        registrosPorData[data] = [];
       }
+      registrosPorData[data].push(registro);
+    });
 
-      tr.innerHTML = `
-        <td>${dataFormatada}</td>
-        <td>${tipoPontoFormatado}</td>
-        <td>${registro.hora}</td>
-        <td>${
-          registro.foto && registro.foto.length > 0
-            ? `<button class="btn-view-fotos" data-id="${registro.id}">
-            <i class="fas fa-image"></i> Ver Fotos (${registro.foto.length})
-          </button>`
-            : "Sem fotos"
-        }</td>
-        <td>
-          <button class="action-btn btn-edit" data-id="${registro.id}">
-            <i class="fas fa-edit"></i> Editar
-          </button>
-          <button class="action-btn btn-delete" data-id="${registro.id}">
-            <i class="fas fa-trash"></i> Excluir
-          </button>
+    // Ordena as datas em ordem decrescente
+    const datasOrdenadas = Object.keys(registrosPorData).sort(
+      (a, b) => new Date(b) - new Date(a)
+    );
+
+    // Para cada data, ordena os registros na sequência correta
+    datasOrdenadas.forEach((data) => {
+      const registrosDia = registrosPorData[data];
+
+      // Define a ordem correta dos tipos de registro
+      const ordemTipos = ["entrada", "almoco", "retorno", "saida"];
+
+      // Ordena os registros do dia na sequência correta
+      registrosDia.sort((a, b) => {
+        const indexA = ordemTipos.indexOf(a.tipoPonto);
+        const indexB = ordemTipos.indexOf(b.tipoPonto);
+        return indexA - indexB;
+      });
+
+      // Adiciona um cabeçalho para o dia da semana
+      const dataObj = new Date(data);
+      const diaSemana = dataObj.toLocaleDateString("pt-BR", {
+        weekday: "long",
+      });
+      const trCabecalho = document.createElement("tr");
+      trCabecalho.innerHTML = `
+        <td colspan="5" style="
+          background-color: #f8f9fa;
+          font-weight: bold;
+          text-align: center;
+          padding: 12px;
+          font-size: 16px;
+          color: #2c3e50;
+          border-bottom: 2px solid #dee2e6;
+          text-transform: capitalize;
+        ">
+          ${diaSemana} - ${formatarData(dataObj)}
         </td>
       `;
+      tbody.appendChild(trCabecalho);
 
-      tbody.appendChild(tr);
+      // Adiciona os registros do dia na tabela
+      registrosDia.forEach((registro) => {
+        const tr = document.createElement("tr");
+        tr.style.backgroundColor = "#ffffff";
+        tr.style.transition = "background-color 0.3s";
+        
+        // Adiciona hover effect
+        tr.addEventListener('mouseenter', () => {
+          tr.style.backgroundColor = "#f5f5f5";
+        });
+        tr.addEventListener('mouseleave', () => {
+          tr.style.backgroundColor = "#ffffff";
+        });
+        
+        // Formatar o tipo de ponto
+        let tipoPontoFormatado = registro.tipoPonto;
+        let tipoPontoCor = "";
+        switch (registro.tipoPonto) {
+          case "entrada":
+            tipoPontoFormatado = "Entrada";
+            tipoPontoCor = "#28a745"; // Verde
+            break;
+          case "saida":
+            tipoPontoFormatado = "Saída";
+            tipoPontoCor = "#dc3545"; // Vermelho
+            break;
+          case "almoco":
+            tipoPontoFormatado = "Almoço";
+            tipoPontoCor = "#ffc107"; // Amarelo
+            break;
+          case "retorno":
+            tipoPontoFormatado = "Retorno";
+            tipoPontoCor = "#17a2b8"; // Azul
+            break;
+          case "intervalo_inicio":
+            tipoPontoFormatado = "Início Intervalo";
+            tipoPontoCor = "#6c757d"; // Cinza
+            break;
+          case "intervalo_fim":
+            tipoPontoFormatado = "Fim Intervalo";
+            tipoPontoCor = "#6c757d"; // Cinza
+            break;
+        }
+
+        tr.innerHTML = `
+          <td style="padding: 12px; border-bottom: 1px solid #dee2e6; color: #2c3e50; font-size: 14px;">
+            ${formatarDataLocal(registro.data)}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #dee2e6; font-weight: 500;">
+            <span style="
+              color: ${tipoPontoCor};
+              padding: 4px 8px;
+              border-radius: 4px;
+              background-color: ${tipoPontoCor}15;
+              font-size: 14px;
+            ">
+              ${tipoPontoFormatado}
+            </span>
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #dee2e6; color: #2c3e50; font-size: 14px;">
+            ${registro.hora}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #dee2e6;">
+            ${
+              registro.foto && registro.foto.length > 0
+                ? `<button class="btn-view-fotos" data-id="${registro.id}" style="
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    transition: background-color 0.3s;
+                  ">
+                  <i class="fas fa-image"></i> Ver Fotos (${registro.foto.length})
+                </button>`
+                : '<span style="color: #6c757d; font-size: 14px;">Sem fotos</span>'
+            }
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #dee2e6;">
+            <button class="action-btn btn-edit" data-id="${registro.id}" style="
+              background-color: #28a745;
+              color: white;
+              border: none;
+              padding: 6px 12px;
+              border-radius: 4px;
+              cursor: pointer;
+              margin-right: 8px;
+              font-size: 14px;
+              transition: background-color 0.3s;
+            ">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            <button class="action-btn btn-delete" data-id="${registro.id}" style="
+              background-color: #dc3545;
+              color: white;
+              border: none;
+              padding: 6px 12px;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 14px;
+              transition: background-color 0.3s;
+            ">
+              <i class="fas fa-trash"></i> Excluir
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Adiciona uma linha separadora após cada dia
+      const trSeparador = document.createElement("tr");
+      trSeparador.innerHTML = `
+        <td colspan="5" style="padding: 8px; border-bottom: 2px solid #dee2e6;"></td>
+      `;
+      tbody.appendChild(trSeparador);
     });
 
     // Adicionar event listeners aos botões
@@ -403,9 +546,16 @@ document.addEventListener("DOMContentLoaded", function () {
         const registroId = btn.getAttribute("data-id");
         const registro = registros.find((r) => r.id === registroId);
         if (registro && registro.foto && registro.foto.length > 0) {
-          // Implementar visualização de fotos
           alert("Visualização de fotos será implementada em breve.");
         }
+      });
+      
+      // Adiciona hover effect nos botões
+      btn.addEventListener('mouseenter', () => {
+        btn.style.backgroundColor = '#0056b3';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.backgroundColor = '#007bff';
       });
     });
 
@@ -417,6 +567,14 @@ document.addEventListener("DOMContentLoaded", function () {
           abrirModalEdicao(registro);
         }
       });
+      
+      // Adiciona hover effect nos botões
+      btn.addEventListener('mouseenter', () => {
+        btn.style.backgroundColor = '#218838';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.backgroundColor = '#28a745';
+      });
     });
 
     document.querySelectorAll(".btn-delete").forEach((btn) => {
@@ -426,6 +584,14 @@ document.addEventListener("DOMContentLoaded", function () {
           await excluirRegistro(registroId);
         }
       });
+      
+      // Adiciona hover effect nos botões
+      btn.addEventListener('mouseenter', () => {
+        btn.style.backgroundColor = '#c82333';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.backgroundColor = '#dc3545';
+      });
     });
   }
 
@@ -434,9 +600,7 @@ document.addEventListener("DOMContentLoaded", function () {
     registroEditando = registro;
 
     // Preencher o formulário com os dados do registro
-    document.getElementById("editar-data").value = new Date(registro.data)
-        .toISOString()
-        .split("T")[0];
+    document.getElementById("editar-data").value = ajustarData(registro.data);
     document.getElementById("editar-tipo-ponto").value = registro.tipoPonto;
     document.getElementById("editar-hora").value = registro.hora;
 
@@ -1026,6 +1190,25 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Erro ao atualizar registro:", error);
         alert(`Erro ao atualizar registro: ${error.message}`);
     }
+  });
+
+  // Adiciona event listeners para os filtros de data
+  document
+    .getElementById("data-inicial")
+    .addEventListener("change", function () {
+      const dataInicial = this.value;
+      const dataFinal = document.getElementById("data-final").value;
+      registrosFiltrados = filtrarRegistrosPorData(dataInicial, dataFinal);
+      atualizarTabelaRegistros();
+      atualizarCalculos();
+    });
+
+  document.getElementById("data-final").addEventListener("change", function () {
+    const dataInicial = document.getElementById("data-inicial").value;
+    const dataFinal = this.value;
+    registrosFiltrados = filtrarRegistrosPorData(dataInicial, dataFinal);
+    atualizarTabelaRegistros();
+    atualizarCalculos();
   });
 
   // Inicializar a página
