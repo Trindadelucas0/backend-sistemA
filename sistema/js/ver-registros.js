@@ -1187,3 +1187,11 @@ document.addEventListener("DOMContentLoaded", function () {
     atualizarCalculos();
   });
 });
+function fazerLogout() {
+  // Limpa os dados de autenticação
+  localStorage.removeItem('token');
+  localStorage.removeItem('usuario');
+  
+  // Redireciona para a página de login
+  window.location.href = 'login.html';
+}

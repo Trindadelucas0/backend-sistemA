@@ -1,2 +1,2 @@
-const apiUrl = "https://seuponto.ddns.net/api";
-//const apiUrl = "http://localhost:3000";
+//const apiUrl = "https://seuponto.ddns.net/api";
+const apiUrl = "http://localhost:3000";

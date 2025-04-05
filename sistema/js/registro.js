@@ -131,3 +131,11 @@ document.addEventListener("DOMContentLoaded", function () {
       window.location.href = "/sistema/pages/ver-registros.html"; // Vai para a página de visualização dos registros
     });
 });
+function fazerLogout() {
+  // Limpa os dados de autenticação
+  localStorage.removeItem('token');
+  localStorage.removeItem('usuario');
+  
+  // Redireciona para a página de login
+  window.location.href = 'login.html';
+}
