@@ -1,3 +1,9 @@
+/**
+ * Arquivo de rotas privadas (private.js)
+ * Contém as rotas que requerem autenticação.
+ * Todas as rotas neste arquivo são protegidas pelo middleware de autenticação.
+ */
+
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import auth from "../middlewares/auth.js";
@@ -5,7 +11,10 @@ import auth from "../middlewares/auth.js";
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Middleware para verificar se é admin
+/**
+ * Middleware para verificar se o usuário é administrador
+ * Este middleware é usado em rotas que requerem privilégios de administrador
+ */
 const isAdmin = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
@@ -21,7 +30,16 @@ const isAdmin = async (req, res, next) => {
   }
 };
 
-// Listar todos os usuários (apenas para admin)
+/**
+ * Rota para listar todos os usuários
+ * GET /usuarios
+ * Requer autenticação e privilégios de administrador
+ * 
+ * Retorna:
+ * - 200: Lista de usuários
+ * - 403: Acesso negado (não é admin)
+ * - 500: Erro no servidor
+ */
 router.get('/usuarios', auth, isAdmin, async (req, res) => {
   try {
     console.log("Iniciando busca de usuários...");
@@ -51,7 +69,21 @@ router.get('/usuarios', auth, isAdmin, async (req, res) => {
   }
 });
 
-// Bloquear/Desbloquear usuário
+/**
+ * Rota para bloquear/desbloquear usuário
+ * PUT /usuarios/:id/status
+ * Requer autenticação e privilégios de administrador
+ * 
+ * Parâmetros:
+ * - id: ID do usuário
+ * Body:
+ * - isBlocked: boolean (true para bloquear, false para desbloquear)
+ * 
+ * Retorna:
+ * - 200: Status atualizado com sucesso
+ * - 403: Acesso negado (não é admin)
+ * - 500: Erro no servidor
+ */
 router.put('/usuarios/:id/status', auth, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -78,7 +110,19 @@ router.put('/usuarios/:id/status', auth, isAdmin, async (req, res) => {
   }
 });
 
-// Listar registros de um usuário específico (apenas para admin)
+/**
+ * Rota para listar registros de um usuário específico
+ * GET /usuarios/:id/registros
+ * Requer autenticação e privilégios de administrador
+ * 
+ * Parâmetros:
+ * - id: ID do usuário
+ * 
+ * Retorna:
+ * - 200: Lista de registros do usuário
+ * - 403: Acesso negado (não é admin)
+ * - 500: Erro no servidor
+ */
 router.get('/usuarios/:id/registros', auth, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -93,7 +137,22 @@ router.get('/usuarios/:id/registros', auth, isAdmin, async (req, res) => {
   }
 });
 
-// Criar registro
+/**
+ * Rota para criar um novo registro de ponto
+ * POST /registro
+ * Requer autenticação
+ * 
+ * Body:
+ * - data: Data do registro (YYYY-MM-DD)
+ * - tipoPonto: Tipo do registro (entrada, saida, almoco, retorno, intervalo_inicio, intervalo_fim)
+ * - hora: Horário do registro (HH:MM)
+ * - foto: Array de strings com as fotos (opcional)
+ * 
+ * Retorna:
+ * - 201: Registro criado com sucesso
+ * - 400: Dados inválidos
+ * - 500: Erro no servidor
+ */
 router.post("/registro", auth, async (req, res) => {
   try {
     console.log("Recebendo requisição de registro:", req.body);
@@ -101,34 +160,34 @@ router.post("/registro", auth, async (req, res) => {
     
     const { data, tipoPonto, hora, foto } = req.body;
 
-    // Validação
+    // Validação dos campos obrigatórios
     if (!data || !tipoPonto || !hora) {
       console.log("Dados incompletos:", { data, tipoPonto, hora });
       return res.status(400).json({ message: "Data, tipo e horário são obrigatórios" });
     }
 
-    // Validar formato da data
+    // Validação do formato da data
     const dataObj = new Date(data);
     if (isNaN(dataObj.getTime())) {
       console.log("Data inválida:", data);
       return res.status(400).json({ message: "Formato de data inválido" });
     }
 
-    // Validar tipo de ponto
+    // Validação do tipo de ponto
     const tiposValidos = ['entrada', 'saida', 'almoco', 'retorno', 'intervalo_inicio', 'intervalo_fim'];
     if (!tiposValidos.includes(tipoPonto)) {
       console.log("Tipo de ponto inválido:", tipoPonto);
       return res.status(400).json({ message: "Tipo de ponto inválido" });
     }
 
-    // Validar formato da hora
+    // Validação do formato da hora
     const horaRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!horaRegex.test(hora)) {
       console.log("Formato de hora inválido:", hora);
       return res.status(400).json({ message: "Formato de hora inválido (use HH:MM)" });
     }
 
-    // Processar fotos
+    // Processamento das fotos
     let fotosProcessadas = [];
     if (foto) {
       if (Array.isArray(foto)) {
@@ -146,7 +205,7 @@ router.post("/registro", auth, async (req, res) => {
       fotos: fotosProcessadas.length
     });
 
-    // Cria o registro
+    // Criação do registro no banco de dados
     const registro = await prisma.registro.create({
       data: {
         userId: req.user.id,
@@ -165,7 +224,15 @@ router.post("/registro", auth, async (req, res) => {
   }
 });
 
-// Listar registros do usuário
+/**
+ * Rota para listar registros do usuário autenticado
+ * GET /registros
+ * Requer autenticação
+ * 
+ * Retorna:
+ * - 200: Lista de registros do usuário
+ * - 500: Erro no servidor
+ */
 router.get("/registros", auth, async (req, res) => {
   try {
     const registros = await prisma.registro.findMany({
@@ -179,7 +246,25 @@ router.get("/registros", auth, async (req, res) => {
   }
 });
 
-// Atualizar registro
+/**
+ * Rota para atualizar um registro existente
+ * PUT /registro/:id
+ * Requer autenticação
+ * 
+ * Parâmetros:
+ * - id: ID do registro
+ * Body:
+ * - data: Nova data (opcional)
+ * - tipoPonto: Novo tipo (opcional)
+ * - hora: Nova hora (opcional)
+ * - foto: Novas fotos (opcional)
+ * 
+ * Retorna:
+ * - 200: Registro atualizado com sucesso
+ * - 400: Dados inválidos
+ * - 404: Registro não encontrado
+ * - 500: Erro no servidor
+ */
 router.put("/registro/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -200,7 +285,7 @@ router.put("/registro/:id", auth, async (req, res) => {
     const updateData = {};
 
     if (data) {
-      // Validação robusta da data
+      // Validação da data
       const dataObj = new Date(data);
       if (isNaN(dataObj.getTime())) {
         return res.status(400).json({ message: "Data inválida. Use o formato YYYY-MM-DD." });
@@ -238,7 +323,19 @@ router.put("/registro/:id", auth, async (req, res) => {
   }
 });
 
-// Deletar registro (versão corrigida)
+/**
+ * Rota para deletar um registro
+ * DELETE /registro/:id
+ * Requer autenticação
+ * 
+ * Parâmetros:
+ * - id: ID do registro
+ * 
+ * Retorna:
+ * - 200: Registro deletado com sucesso
+ * - 404: Registro não encontrado
+ * - 500: Erro no servidor
+ */
 router.delete("/registro/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -252,7 +349,7 @@ router.delete("/registro/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Registro não encontrado" });
     }
 
-    // Verifica se o registro pertence ao usuário autenticado
+    // Verifica se o registro pertence ao usuário
     if (registro.userId !== req.user.id) {
       return res.status(403).json({ message: "Acesso negado" });
     }
@@ -262,9 +359,9 @@ router.delete("/registro/:id", auth, async (req, res) => {
       where: { id: String(id) },
     });
 
-    res.status(200).json({ message: "Registro removido com sucesso" });
+    res.status(200).json({ message: "Registro deletado com sucesso" });
   } catch (err) {
-    console.error("Erro ao remover registro:", err);
+    console.error("Erro ao deletar registro:", err);
     res.status(500).json({ message: "Erro no servidor" });
   }
 });

@@ -1,14 +1,24 @@
+/**
+ * Arquivo de visualização de registros (ver-registros.js)
+ * Gerencia a exibição e manipulação dos registros de ponto do usuário.
+ * Este script permite visualizar, filtrar, editar e excluir registros de ponto,
+ * além de calcular horas trabalhadas e verificar ciclos de trabalho.
+ */
+
+// Aguarda o DOM ser completamente carregado antes de executar o código
 document.addEventListener("DOMContentLoaded", function () {
   // Verificar token e usuário
   const token = localStorage.getItem("token");
   const usuarioStr = localStorage.getItem("usuario");
 
+  // Verifica se o usuário está autenticado
   if (!token || !usuarioStr) {
     alert("Nenhum usuário logado! Faça login primeiro.");
     window.location.href = "/Sistema/pages/login.html";
     return;
   }
 
+  // Processa os dados do usuário armazenados no localStorage
   let usuario;
   try {
     usuario = JSON.parse(usuarioStr);
@@ -24,11 +34,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   console.log("Usuário logado:", usuario); // Log para debug
 
+  // Referências aos elementos do DOM
   const tabela = document.getElementById("tabela-registros");
   const formEdicao = document.getElementById("form-edicao");
   const editarForm = document.getElementById("editar-form");
   const cancelarEdicaoBtn = document.getElementById("cancelar-edicao");
 
+  // Variáveis para armazenar os registros e o estado da edição
   let registros = [];
   let registrosFiltrados = [];
   let registroEditando = null;

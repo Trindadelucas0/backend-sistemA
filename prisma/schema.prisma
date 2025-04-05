@@ -1,17 +1,37 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+/**
+ * Schema do Prisma (schema.prisma)
+ * Define a estrutura do banco de dados e os relacionamentos entre as entidades.
+ * Este arquivo é usado pelo Prisma para gerar o cliente do banco de dados.
+ */
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Configuração do gerador do cliente Prisma
 generator client {
   provider = "prisma-client-js"
 }
 
+// Configuração da fonte de dados (MongoDB)
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
+/**
+ * Modelo de Usuário
+ * Representa um usuário do sistema
+ * 
+ * Campos:
+ * - id: Identificador único do usuário (ObjectId do MongoDB)
+ * - name: Nome do usuário
+ * - email: Email do usuário (único)
+ * - password: Senha criptografada
+ * - isAdmin: Flag indicando se o usuário é administrador
+ * - isBlocked: Flag indicando se o usuário está bloqueado
+ * - lastLogin: Data e hora do último login
+ * - registros: Relacionamento com os registros de ponto do usuário
+ */
 model User {
   id        String     @id @default(auto()) @map("_id") @db.ObjectId
   name      String
@@ -23,6 +43,19 @@ model User {
   registros Registro[] // Relacionamento com o modelo Registro
 }
 
+/**
+ * Modelo de Registro
+ * Representa um registro de ponto de um usuário
+ * 
+ * Campos:
+ * - id: Identificador único do registro (ObjectId do MongoDB)
+ * - userId: ID do usuário que fez o registro
+ * - data: Data do registro
+ * - tipoPonto: Tipo do registro (entrada, saída, almoço, etc.)
+ * - hora: Horário do registro
+ * - foto: Array de strings com as fotos do registro
+ * - user: Relacionamento com o usuário que fez o registro
+ */
 model Registro {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId

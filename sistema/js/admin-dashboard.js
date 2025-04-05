@@ -1,14 +1,24 @@
+/**
+ * Arquivo de dashboard do administrador (admin-dashboard.js)
+ * Gerencia a interface administrativa do sistema.
+ * Este script permite que administradores gerenciem usuários e visualizem registros de ponto,
+ * além de bloquear/desbloquear usuários e gerar relatórios.
+ */
+
+// Aguarda o DOM ser completamente carregado antes de executar o código
 document.addEventListener("DOMContentLoaded", function () {
   // Verificar token e usuário
   const token = localStorage.getItem("token");
   const usuarioStr = localStorage.getItem("usuario");
 
+  // Verifica se o usuário está autenticado
   if (!token || !usuarioStr) {
     alert("Nenhum usuário logado! Faça login primeiro.");
     window.location.href = "/sistema/pages/login.html";
     return;
   }
 
+  // Processa os dados do usuário armazenados no localStorage
   let usuario;
   try {
     usuario = JSON.parse(usuarioStr);
@@ -29,10 +39,10 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  // Exibir nome do admin
+  // Exibir nome do admin na interface
   document.getElementById("admin-name").textContent = `Admin: ${usuario.nome}`;
 
-  // Elementos da interface
+  // Referências aos elementos da interface
   const btnUsuarios = document.getElementById("btn-usuarios");
   const btnRegistros = document.getElementById("btn-registros");
   const panelUsuarios = document.getElementById("panel-usuarios");

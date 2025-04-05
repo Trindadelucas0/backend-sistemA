@@ -1,3 +1,9 @@
+/**
+ * Arquivo de rotas públicas (publicas.js)
+ * Contém as rotas que não requerem autenticação, como login e cadastro.
+ * Estas rotas são acessíveis a qualquer usuário.
+ */
+
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -7,19 +13,32 @@ const router = express.Router();
 const prisma = new PrismaClient();
 const jwt_secret = process.env.jwt_secret;
 
-// Rota de cadastro
+/**
+ * Rota de cadastro de usuários
+ * POST /cadastro
+ * 
+ * Requer no body:
+ * - name: Nome do usuário
+ * - email: Email do usuário (deve ser único)
+ * - password: Senha do usuário (será criptografada)
+ * 
+ * Retorna:
+ * - 201: Usuário criado com sucesso
+ * - 400: Dados inválidos ou email já cadastrado
+ * - 500: Erro no servidor
+ */
 router.post("/cadastro", async (req, res) => {
   try {
     console.log("Dados recebidos no cadastro:", req.body);
 
     const user = req.body;
 
-    // Validação básica
+    // Validação básica dos campos obrigatórios
     if (!user.name || !user.email || !user.password) {
       return res.status(400).json({ message: "Todos os campos são obrigatórios" });
     }
 
-    // Verifica se o e-mail já está cadastrado
+    // Verifica se o e-mail já está cadastrado para evitar duplicatas
     const userExists = await prisma.user.findUnique({
       where: { email: user.email },
     });
@@ -27,11 +46,11 @@ router.post("/cadastro", async (req, res) => {
       return res.status(400).json({ message: "E-mail já cadastrado" });
     }
 
-    // Criptografa a senha
+    // Criptografa a senha usando bcrypt com salt de 10 rounds
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(user.password, salt);
 
-    // Cria o usuário no banco de dados
+    // Cria o usuário no banco de dados com a senha criptografada
     const userDb = await prisma.user.create({
       data: {
         email: user.email,
@@ -48,12 +67,26 @@ router.post("/cadastro", async (req, res) => {
   }
 });
 
-// Rota de login usando o JWT
+/**
+ * Rota de login
+ * POST /login
+ * 
+ * Requer no body:
+ * - email: Email do usuário
+ * - password: Senha do usuário
+ * 
+ * Retorna:
+ * - 200: Login bem sucedido (token JWT + dados do usuário)
+ * - 401: Senha inválida
+ * - 403: Usuário bloqueado
+ * - 404: Usuário não encontrado
+ * - 500: Erro no servidor
+ */
 router.post("/login", async (req, res) => {
   try {
     const userInfo = req.body;
 
-    // Verifica se o usuário existe no banco de dados
+    // Busca o usuário pelo email
     const user = await prisma.user.findUnique({
       where: { email: userInfo.email },
     });
@@ -67,16 +100,16 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Usuário bloqueado. Entre em contato com o administrador." });
     }
 
-    // Compara a senha fornecida com a senha armazenada no banco
+    // Compara a senha fornecida com a senha armazenada
     const validaSenha = await bcrypt.compare(userInfo.password, user.password);
     if (!validaSenha) {
       return res.status(401).json({ message: "Senha inválida" });
     }
 
     // Verifica se é o primeiro usuário do sistema
+    // Se for, torna automaticamente admin
     const totalUsers = await prisma.user.count();
     if (totalUsers === 1) {
-      // Torna o primeiro usuário admin
       await prisma.user.update({
         where: { id: user.id },
         data: { isAdmin: true }
@@ -84,13 +117,13 @@ router.post("/login", async (req, res) => {
       user.isAdmin = true;
     }
 
-    // Atualiza o último login
+    // Atualiza o timestamp do último login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLogin: new Date() }
     });
 
-    // Gera o token JWT
+    // Gera o token JWT com expiração de 1 hora
     const token = jwt.sign({ 
       id: user.id,
       isAdmin: user.isAdmin 
