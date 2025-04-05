@@ -5,9 +5,8 @@
  * entre ambientes de desenvolvimento e produção.
  */
 
-// URL da API em produção 
+// URL da API em produção
 // URL da API em ambiente de desenvolvimento local
 
-
-//const apiUrl = "https://seuponto.ddns.net/api";
-const apiUrl = "http://localhost:3000";
+const apiUrl = "https://seuponto.ddns.net/api";
+//const apiUrl = "http://localhost:3000";
