@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
               isAdmin: data.user.isAdmin,
               matricula: data.user.id, // Usando o ID como matrícula temporariamente
               cargo: data.user.isAdmin ? "Administrador" : "Funcionário",
-              departamento: "TI", // Valor padrão
+              departamento: "NÃO ADICIONADO", // Valor padrão
             })
           );
 
