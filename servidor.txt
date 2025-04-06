@@ -1,0 +1,5 @@
+abrir o putty na barra de tarefas
+carregar o ssh VPS
+digite o usuário ubuntu
+digite sudo su -
+digite service seuponto restart
