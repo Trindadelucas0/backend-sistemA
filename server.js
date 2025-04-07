@@ -10,6 +10,7 @@ import { config } from "dotenv";
 import publicas from "./routes/publicas.js";
 import privat from "./routes/private.js";
 import auth from "./middlewares/auth.js";
+import uploadRoutes from "./routes/upload.js";
 
 config();
 // Inicialização do aplicativo Express
@@ -30,6 +31,12 @@ app.use("/", publicas);
 // Rotas privadas (requerem autenticação)
 // O middleware 'auth' verifica o token JWT antes de permitir o acesso
 app.use("/", auth, privat);
+
+// Rota de upload de imagens
+app.use("/api", uploadRoutes);
+
+// Configuração para servir arquivos estáticos
+app.use('/public', express.static('public'));
 
 // Inicialização do servidor na porta 3000
 app.listen(3000, () =>

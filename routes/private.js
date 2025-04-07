@@ -7,6 +7,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import auth from "../middlewares/auth.js";
+import upload from '../utils/upload.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -146,19 +147,20 @@ router.get('/usuarios/:id/registros', auth, isAdmin, async (req, res) => {
  * - data: Data do registro (YYYY-MM-DD)
  * - tipoPonto: Tipo do registro (entrada, saida, almoco, retorno, intervalo_inicio, intervalo_fim)
  * - hora: Horário do registro (HH:MM)
- * - foto: Array de strings com as fotos (opcional)
+ * - foto: Arquivo de imagem (opcional)
  * 
  * Retorna:
  * - 201: Registro criado com sucesso
  * - 400: Dados inválidos
  * - 500: Erro no servidor
  */
-router.post("/registro", auth, async (req, res) => {
+router.post("/registro", auth, upload.single('foto'), async (req, res) => {
   try {
     console.log("Recebendo requisição de registro:", req.body);
+    console.log("Arquivo recebido:", req.file);
     console.log("Usuário autenticado:", req.user);
     
-    const { data, tipoPonto, hora, foto } = req.body;
+    const { data, tipoPonto, hora } = req.body;
 
     // Validação dos campos obrigatórios
     if (!data || !tipoPonto || !hora) {
@@ -187,14 +189,10 @@ router.post("/registro", auth, async (req, res) => {
       return res.status(400).json({ message: "Formato de hora inválido (use HH:MM)" });
     }
 
-    // Processamento das fotos
-    let fotosProcessadas = [];
-    if (foto) {
-      if (Array.isArray(foto)) {
-        fotosProcessadas = foto.filter(Boolean);
-      } else if (typeof foto === 'string') {
-        fotosProcessadas = [foto];
-      }
+    // Processamento da foto
+    let fotoURL = null;
+    if (req.file) {
+      fotoURL = `/public/imagens/${req.file.filename}`;
     }
 
     console.log("Criando registro com dados:", {
@@ -202,7 +200,7 @@ router.post("/registro", auth, async (req, res) => {
       data: dataObj,
       tipoPonto,
       hora,
-      fotos: fotosProcessadas.length
+      foto: fotoURL
     });
 
     // Criação do registro no banco de dados
@@ -212,7 +210,7 @@ router.post("/registro", auth, async (req, res) => {
         data: dataObj,
         tipoPonto,
         hora,
-        foto: fotosProcessadas
+        foto: fotoURL ? [fotoURL] : []
       }
     });
 
